@@ -6,6 +6,7 @@
 class HTTPServer {
   static constexpr auto ROOT_HTML = "/index.html";
   static constexpr auto CSS_FILE  = "/style.css";
+  static constexpr auto JS_FILE   = "/script.js";
 
   AsyncWebServer m_server;
 
@@ -24,6 +25,7 @@ public:
 private:
   static void onRoot(AsyncWebServerRequest* request);
   static void onCSS(AsyncWebServerRequest* request);
+  static void onJS(AsyncWebServerRequest* request);
   static void onNotFound(AsyncWebServerRequest* request);
 };
 

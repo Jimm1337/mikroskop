@@ -5,6 +5,7 @@
 HTTPServer::HTTPServer(uint_fast16_t port): m_server(port) {
   m_server.on("/", HTTP_GET, &HTTPServer::onRoot);
   m_server.on("/style.css", HTTP_GET, &HTTPServer::onCSS);
+  m_server.on("/script.js", HTTP_GET, &HTTPServer::onJS);
   m_server.onNotFound(&HTTPServer::onNotFound);
 
   begin();
@@ -30,6 +31,11 @@ void HTTPServer::onRoot(AsyncWebServerRequest* request) {
 void HTTPServer::onCSS(AsyncWebServerRequest* request) {
   Logger::debug("HTTP GET request of " + request->url());
   request->send(SPIFFS, CSS_FILE, "text/css");
+}
+
+void HTTPServer::onJS(AsyncWebServerRequest* request) {
+    Logger::debug("HTTP GET request of " + request->url());
+    request->send(SPIFFS, JS_FILE, "text/javascript");
 }
 
 void HTTPServer::onNotFound(AsyncWebServerRequest* request) {
