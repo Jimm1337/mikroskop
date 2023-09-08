@@ -1,9 +1,9 @@
 #ifndef MIKROSKOP_LOGGER_H
 #define MIKROSKOP_LOGGER_H
 
-#define LOG_DEBUG
-
 #include <Arduino.h>
+
+#define LOG_DEBUG
 
 namespace Logger {
 

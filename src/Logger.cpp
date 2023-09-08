@@ -7,12 +7,15 @@ void info(String msg) {
   Serial.println(msg);
 }
 
-void debug(String msg) {
 #ifdef LOG_DEBUG
+void debug(String msg) {
+
   Serial.print("[DEBUG] ");
   Serial.println(msg);
-#endif
 }
+#else
+void debug(String msg) {}
+#endif
 
 void warn(String msg) {
   Serial.print("[W] ");

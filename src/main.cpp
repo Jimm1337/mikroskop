@@ -1,8 +1,9 @@
 #include <Arduino.h>
 #include <WiFi.h>
 #include "Global.h"
-#include "Logger.h"
 #include "HTTPServer.h"
+#include "Logger.h"
+#include "Motors.h"
 #include "WebSocket.h"
 
 static constexpr auto     SSID      = "Mikroskop";
@@ -19,6 +20,7 @@ void setup() {
 }
 
 void loop() {
-  static const WebSocket  wsServer(WS_PORT, "/");
+  static WebSocket        wsServer(WS_PORT, "/");
+  static const Motors     motors(&wsServer);
   static const HTTPServer httpServer(HTTP_PORT);
 }

@@ -3,11 +3,17 @@
 
 #include <AsyncWebSocket.h>
 #include <ESPAsyncWebServer.h>
+#include <functional>
+#include <unordered_map>
+#include "Global.h"
 #include "Logger.h"
 
 class WebSocket {
-  AsyncWebSocket m_ws;
-  AsyncWebServer m_server;
+  using Handler = std::function< void(AsyncWebSocketClient*, String) >;
+
+  AsyncWebSocket                      m_ws;
+  AsyncWebServer                      m_server;
+  std::unordered_map< char, Handler > m_handlers;
 
 public:
   WebSocket(uint16_t port, std::string_view uri);
@@ -20,12 +26,18 @@ public:
 
   void begin();
   void end();
+  void sendPos(Global::PosTupleXYZ pos);
+
+  template< typename Fn >
+  void attachListener(char startingLetter, Fn&& handler) {
+    m_handlers.emplace(startingLetter, std::forward< Fn >(handler));
+  }
 
 private:
   void onConnect(AsyncWebSocketClient* client);
   void onDisconnect(AsyncWebSocketClient* client);
-  void onData(AsyncWebSocketClient* client, uint8_t* data, size_t len);
-  void onError(AsyncWebSocketClient* client);
+  void onData(AsyncWebSocketClient* client, const String& data);
+  void onError(AsyncWebSocketClient* client, const String& msg);
   void onPing(AsyncWebSocketClient* client);
 
   void onEvent(

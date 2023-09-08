@@ -60,3 +60,15 @@ body {
 .btn-stop:disabled {
     background-color: #cccccc;
 }
+
+.posSpan {
+    display: inline-block;
+    margin: 5px;
+    padding: 5px 20px;
+    font-weight: bold;
+    background-color: #2aa815;
+    color: #ffffff;
+    border: 1px solid #cccccc;
+    border-radius: 10px;
+    width: 70px;
+}
