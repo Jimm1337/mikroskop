@@ -10,6 +10,7 @@ namespace SETTINGS {
 inline constexpr auto SSID      = "Mikroskop";
 inline constexpr auto PASS      = "pn_mikroskop";
 inline constexpr auto WS_PORT   = 1337;
+inline constexpr auto WS_URI    = "/";
 inline constexpr auto HTTP_PORT = 80;
 } // namespace SETTINGS
 
@@ -45,8 +46,9 @@ enum CHAR : char {
   MANUAL_STOP_UP     = 'Q',
   MANUAL_STOP_DOWN   = 'q',
   MANUAL_CONFIRM     = 'K',
-  TIME               = 'T',
+  TIME               = 'y',
   LOST_CONTROL       = 'L', // SEND ONLY
+  INFO               = 'i', // SEND ONLY
 };
 } // namespace MSG_TYPE
 
@@ -75,7 +77,6 @@ namespace HANDLER {
 enum CHAR : char {
   CONNECT    = ',', // Not applicable
   DISCONNECT = '.', // Not applicable
-  INFO       = 'i', // SEND ONLY
 };
 } // namespace HANDLER
 
@@ -183,7 +184,7 @@ struct Time {
     }
   }
 
-  explicit Time(TIME::Period asMs = 0): asMs(asMs) {
+  explicit Time(TIME::Period asMs): asMs(asMs) {
     if (asMs == TIME::MS::TIME_1_4000)
     {
       asChar = TIME::CHAR::TIME_1_4000;

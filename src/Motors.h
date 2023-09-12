@@ -7,11 +7,18 @@
 #include <mutex>
 #include <optional>
 #include <tuple>
+#include "Camera.h"
 #include "Global.h"
 #include "TrackedTask.h"
 #include "WebSocket.h"
 
 class Motors {
+  enum class Direction {
+    X,
+    Y,
+    Z
+  };
+
   using Extremes = std::pair<
     std::atomic< std::optional< int_fast16_t > >,
     std::atomic< std::optional< int_fast16_t > > >;
@@ -22,11 +29,14 @@ class Motors {
   static constexpr std::tuple X_PINS{ 32, 33, 25, 26 };
   static constexpr std::tuple Y_PINS{ 27, 14, 12, 13 };
   static constexpr std::tuple Z_PINS{ 21, 19, 18, 5 };
+  static constexpr auto       READY_COUNT = 6;
+  static constexpr auto DEFAULT_SHUTTER_SPEED = GLOBAL::TIME::MS::TIME_1_125;
 
   Stepper                                      m_xStepper; // left/right
   Stepper                                      m_yStepper; // upper/lower
   Stepper                                      m_zStepper; // up/down
   WebSocket*                                   m_webSocket;
+  Camera*                                      m_camera;
   std::atomic< std::optional< uint32_t > >     m_manualClientID;
   TrackedTask                                  m_moveTask;
   TrackedTask                                  m_manualLeftTask;
@@ -44,6 +54,8 @@ class Motors {
   std::atomic< std::optional< int_fast16_t > > m_step;
   GLOBAL::Time                                 m_time;
   mutable std::mutex                           m_mutex;
+  std::atomic< uint_fast8_t >                  m_readyCount;
+  std::atomic< bool >                          m_ready;
   std::atomic< bool >                          m_shouldStop;
   std::atomic< bool >                          m_calibratingUL;
   std::atomic< bool >                          m_calibratingLR;
@@ -57,9 +69,11 @@ class Motors {
   std::atomic< bool >                          m_manualMovingLower;
   std::atomic< bool >                          m_manualMovingUp;
   std::atomic< bool >                          m_manualMovingDown;
+  std::atomic< bool >                          m_stepSet;
+  std::atomic< bool >                          m_nextStepLeft;
 
 public:
-  explicit Motors(WebSocket* webSocket);
+  Motors(WebSocket* webSocket, Camera* camera);
   ~Motors() = default;
 
   Motors(const Motors&)            = delete;
@@ -75,39 +89,59 @@ private:
   void executeManualUp();
   void executeManualDown();
 
-  void moveTo(int_fast16_t xTarget, int_fast16_t yTarget, int_fast16_t zTarget);
-  void nextStep();
+  void                 moveTo(int_fast16_t target, Direction direction);
+  bool                 nextStep();
+  bool nextHeight();
+  void resetHeight();
+  void moveTask();
   [[nodiscard]] String makeInfoString() const;
+  [[nodiscard]] bool   verifyManualClient(AsyncWebSocketClient* client) const;
+  void                 checkReady();
+  void                 checkNotReady();
+  void resetValue(std::atomic< std::optional< int_fast16_t > >& value);
+  void resetValues(
+    std::atomic< std::optional< int_fast16_t > >& value1,
+    std::atomic< std::optional< int_fast16_t > >& value2);
+  void resetStep();
+  void setValue(
+    std::atomic< std::optional< int_fast16_t > >& ref, int_fast16_t newValue);
+  void setValues(
+    std::atomic< std::optional< int_fast16_t > >& ref1,
+    std::atomic< std::optional< int_fast16_t > >& ref2,
+    int_fast16_t                                  newValue1,
+    int_fast16_t                                  newValue2);
+  void setStep(int_fast16_t newValue);
 
-  String startHandler(AsyncWebSocketClient* client, const String& msg);
-  String stopHandler(AsyncWebSocketClient* client, const String& msg);
-  String calStartHandler(AsyncWebSocketClient* client, const String& msg);
-  String calULHandler(AsyncWebSocketClient* client, const String& msg);
-  String calLRHandler(AsyncWebSocketClient* client, const String& msg);
-  String calUpHandler(AsyncWebSocketClient* client, const String& msg);
-  String calDownHandler(AsyncWebSocketClient* client, const String& msg);
-  String calStepHandler(AsyncWebSocketClient* client, const String& msg);
-  String calResetULHandler(AsyncWebSocketClient* client, const String& msg);
-  String calResetLRHandler(AsyncWebSocketClient* client, const String& msg);
-  String calResetUpHandler(AsyncWebSocketClient* client, const String& msg);
-  String calResetDownHandler(AsyncWebSocketClient* client, const String& msg);
-  String calResetStepHandler(AsyncWebSocketClient* client, const String& msg);
-  String mStartLeftHandler(AsyncWebSocketClient* client, const String& msg);
-  String mStartRightHandler(AsyncWebSocketClient* client, const String& msg);
-  String mStartUpperHandler(AsyncWebSocketClient* client, const String& msg);
-  String mStartLowerHandler(AsyncWebSocketClient* client, const String& msg);
-  String mStartUpHandler(AsyncWebSocketClient* client, const String& msg);
-  String mStartDownHandler(AsyncWebSocketClient* client, const String& msg);
-  String mStopLeftHandler(AsyncWebSocketClient* client, const String& msg);
-  String mStopRightHandler(AsyncWebSocketClient* client, const String& msg);
-  String mStopUpperHandler(AsyncWebSocketClient* client, const String& msg);
-  String mStopLowerHandler(AsyncWebSocketClient* client, const String& msg);
-  String mStopUpHandler(AsyncWebSocketClient* client, const String& msg);
-  String mStopDownHandler(AsyncWebSocketClient* client, const String& msg);
-  String mConfirmHandler(AsyncWebSocketClient* client, const String& msg);
-  String infoHandler(AsyncWebSocketClient* client, const String& msg);
-  String timeHandler(AsyncWebSocketClient* client, const String& msg);
-  String disconnectHandler(AsyncWebSocketClient* client, const String& msg);
+  void startHandler(AsyncWebSocketClient* client, const String& msg);
+  void stopHandler(AsyncWebSocketClient* client, const String& msg);
+  void calStartHandler(AsyncWebSocketClient* client, const String& msg);
+  void calULHandler(AsyncWebSocketClient* client, const String& msg);
+  void calLRHandler(AsyncWebSocketClient* client, const String& msg);
+  void calUpHandler(AsyncWebSocketClient* client, const String& msg);
+  void calDownHandler(AsyncWebSocketClient* client, const String& msg);
+  void calStepHandler(AsyncWebSocketClient* client, const String& msg);
+  void calResetULHandler(AsyncWebSocketClient* client, const String& msg);
+  void calResetLRHandler(AsyncWebSocketClient* client, const String& msg);
+  void calResetUpHandler(AsyncWebSocketClient* client, const String& msg);
+  void calResetDownHandler(AsyncWebSocketClient* client, const String& msg);
+  void calResetStepHandler(AsyncWebSocketClient* client, const String& msg);
+  void mStartLeftHandler(AsyncWebSocketClient* client, const String& msg);
+  void mStartRightHandler(AsyncWebSocketClient* client, const String& msg);
+  void mStartUpperHandler(AsyncWebSocketClient* client, const String& msg);
+  void mStartLowerHandler(AsyncWebSocketClient* client, const String& msg);
+  void mStartUpHandler(AsyncWebSocketClient* client, const String& msg);
+  void mStartDownHandler(AsyncWebSocketClient* client, const String& msg);
+  void mStopLeftHandler(AsyncWebSocketClient* client, const String& msg);
+  void mStopRightHandler(AsyncWebSocketClient* client, const String& msg);
+  void mStopUpperHandler(AsyncWebSocketClient* client, const String& msg);
+  void mStopLowerHandler(AsyncWebSocketClient* client, const String& msg);
+  void mStopUpHandler(AsyncWebSocketClient* client, const String& msg);
+  void mStopDownHandler(AsyncWebSocketClient* client, const String& msg);
+  void mConfirmHandler(AsyncWebSocketClient* client, const String& msg);
+  void infoHandler(AsyncWebSocketClient* client, const String& msg);
+  void timeHandler(AsyncWebSocketClient* client, const String& msg);
+  void disconnectHandler(AsyncWebSocketClient* client, const String& msg);
+  void connectHandler(AsyncWebSocketClient* client, const String& msg);
 };
 
 #endif // MIKROSKOP_MOTORS_H

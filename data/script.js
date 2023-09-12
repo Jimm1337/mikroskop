@@ -79,7 +79,7 @@ const TYPE_MANUAL_STOP_UP = "Q";
 const TYPE_MANUAL_STOP_DOWN = "q";
 const TYPE_MANUAL_CONFIRM = "K";
 const TYPE_INFO = "i"; // RECEIVE ONLY
-const TYPE_TIME = "t";
+const TYPE_TIME = "y";
 const TYPE_LOST_CONTROL = "L"; // RECEIVE ONLY
 
 //////////////////////////////////////////////////////////////////////////////////////////
@@ -107,17 +107,24 @@ const DATA_TIME_10 = "f";
 // Constants
 //////////////////////////////////////////////////////////////////////////////////////////
 
-const COLOR_ON = "linear-gradient(to right, #54A81C, #54A81C);";
-const COLOR_PROGRESS = "linear-gradient(to right, #E3D400, #E3D400);";
-const COLOR_OFF = "linear-gradient(to right, #A82C1C, #A82C1C);";
-const COLOR_LEFT_PROGRESS = "linear-gradient(to right, #E3D400, #A82C1C);";
-const COLOR_RIGHT_PROGRESS = "linear-gradient(to right, #54A81C, #E3D400);";
+const COLOR_ON = 'linear-gradient(to right, #54A81C, #54A81C);';
+const COLOR_PROGRESS = 'linear-gradient(to right, #E3D400, #E3D400);';
+const COLOR_OFF = 'linear-gradient(to right, #A82C1C, #A82C1C);';
+const COLOR_LEFT_PROGRESS = 'linear-gradient(to right, #E3D400, #A82C1C);';
+const COLOR_RIGHT_PROGRESS = 'linear-gradient(to right, #54A81C, #E3D400);';
 
 //////////////////////////////////////////////////////////////////////////////////////////
 // Global variables
 //////////////////////////////////////////////////////////////////////////////////////////
 
 let hasManualControl = false;
+let manualLeftLock = false;
+let manualRightLock = false;
+let manualUpperLock = false;
+let manualLowerLock = false;
+let manualUpLock = false;
+let manualDownLock = false;
+let manualConfLock = false;
 
 //////////////////////////////////////////////////////////////////////////////////////////
 // init
@@ -196,100 +203,104 @@ function onMessage(evt) {
         case TYPE_CAL_UL: // Received on progress
             if (isProgress(statusLowerRight)) {
                 setStatus(statusLowerRight, COLOR_OFF);
-                btnLowerRight.disabled = false;
             }
+            btnLowerRight.disabled = false;
             if (isProgress(statusUp)) {
                 setStatus(statusUp, COLOR_OFF);
-                btnUp.disabled = false;
+
             }
+            btnUp.disabled = false;
             if (isProgress(statusDown)) {
                 setStatus(statusDown, COLOR_OFF);
-                btnDown.disabled = false;
+
             }
+            btnDown.disabled = false;
             if (isLeftProgress(statusStep) || isRightProgress(statusStep)) {
                 setStatus(statusStep, COLOR_OFF);
-                btnStep.disabled = false;
+
             }
+            btnStep.disabled = false;
             setStatus(statusUpperLeft, COLOR_PROGRESS);
             btnUpperLeft.disabled = true;
             break;
         case TYPE_CAL_LR: // Received on progress
             if (isProgress(statusUpperLeft)) {
                 setStatus(statusUpperLeft, COLOR_OFF);
-                btnUpperLeft.disabled = false;
             }
+            btnUpperLeft.disabled = false;
             if (isProgress(statusUp)) {
                 setStatus(statusUp, COLOR_OFF);
-                btnUp.disabled = false;
             }
+            btnUp.disabled = false;
             if (isProgress(statusDown)) {
                 setStatus(statusDown, COLOR_OFF);
-                btnDown.disabled = false;
             }
+            btnDown.disabled = false;
             if (isLeftProgress(statusStep) || isRightProgress(statusStep)) {
                 setStatus(statusStep, COLOR_OFF);
-                btnStep.disabled = false;
             }
+            btnStep.disabled = false;
             setStatus(statusLowerRight, COLOR_PROGRESS);
             btnLowerRight.disabled = true;
             break;
         case TYPE_CAL_UP: // Received on progress
             if (isProgress(statusUpperLeft)) {
                 setStatus(statusUpperLeft, COLOR_OFF);
-                btnUpperLeft.disabled = false;
             }
+            btnUpperLeft.disabled = false;
             if (isProgress(statusLowerRight)) {
                 setStatus(statusLowerRight, COLOR_OFF);
-                btnLowerRight.disabled = false;
             }
+            btnLowerRight.disabled = false;
             if (isProgress(statusDown)) {
                 setStatus(statusDown, COLOR_OFF);
                 btnDown.disabled = false;
             }
+            btnDown.disabled = false;
             if (isLeftProgress(statusStep) || isRightProgress(statusStep)) {
                 setStatus(statusStep, COLOR_OFF);
-                btnStep.disabled = false;
             }
+            btnStep.disabled = false;
             setStatus(statusUp, COLOR_PROGRESS);
             btnUp.disabled = true;
             break;
         case TYPE_CAL_DOWN: // Received on progress
             if (isProgress(statusUpperLeft)) {
                 setStatus(statusUpperLeft, COLOR_OFF);
-                btnUpperLeft.disabled = false;
             }
+            btnUpperLeft.disabled = false;
             if (isProgress(statusLowerRight)) {
                 setStatus(statusLowerRight, COLOR_OFF);
-                btnLowerRight.disabled = false;
             }
+            btnLowerRight.disabled = false;
             if (isProgress(statusUp)) {
                 setStatus(statusUp, COLOR_OFF);
-                btnUp.disabled = false;
             }
+            btnUp.disabled = false;
             if (isLeftProgress(statusStep) || isRightProgress(statusStep)) {
                 setStatus(statusStep, COLOR_OFF);
-                btnStep.disabled = false;
             }
+            btnStep.disabled = false;
             setStatus(statusDown, COLOR_PROGRESS);
             btnDown.disabled = true;
             break;
         case TYPE_CAL_STEP: // Received on progress
             if (isProgress(statusUpperLeft)) {
                 setStatus(statusUpperLeft, COLOR_OFF);
-                btnUpperLeft.disabled = false;
             }
+            btnUpperLeft.disabled = false;
             if (isProgress(statusLowerRight)) {
                 setStatus(statusLowerRight, COLOR_OFF);
-                btnLowerRight.disabled = false;
             }
+            btnLowerRight.disabled = false;
             if (isProgress(statusUp)) {
                 setStatus(statusUp, COLOR_OFF);
-                btnUp.disabled = false;
             }
+            btnUp.disabled = false;
             if (isProgress(statusDown)) {
                 setStatus(statusDown, COLOR_OFF);
-                btnDown.disabled = false;
             }
+            btnDown.disabled = false;
             setStatus(statusStep, COLOR_LEFT_PROGRESS);
             btnStep.disabled = true;
             break;
@@ -679,23 +690,23 @@ function assignPageElements() {
 }
 
 function isOn(status) {
-    return status.style.background === COLOR_ON;
+    return status.style.backgroundColor === COLOR_ON;
 }
 
 function isProgress(status) {
-    return status.style.background === COLOR_PROGRESS;
+    return status.style.backgroundColor === COLOR_PROGRESS;
 }
 
 function isLeftProgress(status) {
-    return status.style.background === COLOR_LEFT_PROGRESS;
+    return status.style.backgroundColor === COLOR_LEFT_PROGRESS;
 }
 
 function isRightProgress(status) {
-    return status.style.background === COLOR_RIGHT_PROGRESS;
+    return status.style.backgroundColor === COLOR_RIGHT_PROGRESS;
 }
 
-function setStatus(status, color) {
-    status.style.background = color;
+function setStatus(statusObj, colorObj) {
+    statusObj.style.backgroundColor = colorObj;
 }
 
 function makeMessage(type, data) {
@@ -713,13 +724,13 @@ function toggleStartStopDisplay() {
 }
 
 function enableManualControl() {
-    window.addEventListener("keydown", listenerKeyDown, true);
-    window.addEventListener("keyup", listenerKeyUp, true);
+    window.addEventListener("keydown", listenerKeyDown, false);
+    window.addEventListener("keyup", listenerKeyUp, false);
 }
 
 function disableManualControl() {
-    window.removeEventListener("keydown", listenerKeyDown, true);
-    window.removeEventListener("keyup", listenerKeyUp, true);
+    window.removeEventListener("keydown", listenerKeyDown, false);
+    window.removeEventListener("keyup", listenerKeyUp, false);
 }
 
 function processInfo(data) {
@@ -732,16 +743,21 @@ function processInfo(data) {
     // idx 6: calibrating step (0,1,2, D) - D = done
 
     setRadio(data[0]);
+    enableRadioButtons();
+    enableCalButton();
     if (data[1] === "1") {
         toggleStartStopDisplay();
         disableCalButton();
-        disableCalPosButtons();
         disableRadioButtons();
         setStatus(statusManual, COLOR_OFF);
         disableManualControl();
         hasManualControl = false;
     }
-    infoSetButtons(data[2], data[3], data[4], data[5], data[6]);
+    if (data[2] === '0' && data[3] === '0' && data[4] === '0' && data[5] === '0' && data[6] === '0') {
+        disableCalPosButtons();
+    } else {
+        infoSetButtons(data[2], data[3], data[4], data[5], data[6]);
+    }
 }
 
 function setRadio(radioChar) {
@@ -909,28 +925,49 @@ function listenerKeyDown(event) {
 
     switch (event.key) {
         case "ArrowUp":
-            doSend(makeMessage(TYPE_MANUAL_START_UPPER, ""));
+            if (!manualUpperLock) {
+                doSend(makeMessage(TYPE_MANUAL_START_UPPER, ""));
+            }
+            manualUpperLock = true;
             break;
         case "ArrowDown":
-            doSend(makeMessage(TYPE_MANUAL_START_LOWER, ""));
+            if (!manualLowerLock) {
+                doSend(makeMessage(TYPE_MANUAL_START_LOWER, ""));
+            }
+            manualLowerLock = true;
             break;
         case "ArrowLeft":
-            doSend(makeMessage(TYPE_MANUAL_START_LEFT, ""));
+            if (!manualLeftLock) {
+                doSend(makeMessage(TYPE_MANUAL_START_LEFT, ""));
+            }
+            manualLeftLock = true;
             break;
         case "ArrowRight":
-            doSend(makeMessage(TYPE_MANUAL_START_RIGHT, ""));
+            if (!manualRightLock) {
+                doSend(makeMessage(TYPE_MANUAL_START_RIGHT, ""));
+            }
+            manualRightLock = true;
             break;
         case "+":
         case "Add":
-            doSend(makeMessage(TYPE_MANUAL_START_UP, ""));
+            if (!manualUpLock) {
+                doSend(makeMessage(TYPE_MANUAL_START_UP, ""));
+            }
+            manualUpLock = true;
             break;
         case "-":
         case "Subtract":
-            doSend(makeMessage(TYPE_MANUAL_START_DOWN, ""));
+            if (!manualDownLock) {
+                doSend(makeMessage(TYPE_MANUAL_START_DOWN, ""));
+            }
+            manualDownLock = true;
             break;
         case "x":
         case "X":
-            doSend(makeMessage(TYPE_MANUAL_CONFIRM, ""));
+            if (!manualConfLock) {
+                doSend(makeMessage(TYPE_MANUAL_CONFIRM, ""));
+            }
+            manualConfLock = true;
             break;
         default:
             return; // Quit when this doesn't handle the key event.
@@ -948,23 +985,33 @@ function listenerKeyUp(event) {
     switch (event.key) {
         case "ArrowUp":
             doSend(makeMessage(TYPE_MANUAL_STOP_UPPER, ""));
+            manualUpperLock = false;
             break;
         case "ArrowDown":
             doSend(makeMessage(TYPE_MANUAL_STOP_LOWER, ""));
+            manualLowerLock = false;
             break;
         case "ArrowLeft":
             doSend(makeMessage(TYPE_MANUAL_STOP_LEFT, ""));
+            manualLeftLock = false;
             break;
         case "ArrowRight":
             doSend(makeMessage(TYPE_MANUAL_STOP_RIGHT, ""));
+            manualRightLock = false;
             break;
         case "+":
         case "Add":
             doSend(makeMessage(TYPE_MANUAL_STOP_UP, ""));
+            manualUpLock = false;
             break;
         case "-":
         case "Subtract":
             doSend(makeMessage(TYPE_MANUAL_STOP_DOWN, ""));
+            manualDownLock = false;
+            break;
+        case "x":
+        case "X":
+            manualConfLock = false;
             break;
         default:
             return; // Quit when this doesn't handle the key event.

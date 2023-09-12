@@ -10,8 +10,7 @@
 #include "TrackedTask.h"
 
 class WebSocket {
-  using ResponseData = String;
-  using Handler = std::function< ResponseData(AsyncWebSocketClient*, String) >;
+  using Handler = std::function< void(AsyncWebSocketClient*, String) >;
 
   AsyncWebSocket                                  m_ws;
   AsyncWebServer                                  m_server;
@@ -29,8 +28,7 @@ public:
 
   void begin();
   void end();
-  void sendReady();
-  void sendNotReady();
+  void send(String msg);
   static void sendLostControl(AsyncWebSocketClient* client);
 
   template< typename Fn >

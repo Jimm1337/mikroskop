@@ -3,6 +3,7 @@
 
 #include <atomic>
 #include <thread>
+#include "Logger.h"
 
 class TrackedTask {
   std::thread         m_thread;
@@ -28,14 +29,7 @@ public:
       std::forward< Args >(args)...);
   }
 
-  ~TrackedTask() {
-    if (!m_overlapping)
-    {
-      safeJoin();
-    } else if (m_running) {
-      m_thread.detach();
-    }
-  }
+  ~TrackedTask() = default;
 
   TrackedTask(TrackedTask&& other) noexcept:
     m_thread(std::move(other.m_thread)),

@@ -77,14 +77,6 @@ void WebSocket::onConnect(AsyncWebSocketClient* client) {
   } else {
     Logger::warn("No handler for Connect");
   }
-
-  if (m_handlers.find(GLOBAL::HANDLER::INFO) != m_handlers.end())
-  {
-    const auto dataResponse = m_handlers[GLOBAL::HANDLER::INFO](client, "");
-    client->text(dataResponse);
-  } else {
-    Logger::warn("No handler for Info");
-  }
 }
 
 void WebSocket::onDisconnect(AsyncWebSocketClient* client) {
@@ -109,8 +101,7 @@ void WebSocket::onData(AsyncWebSocketClient* client, const String& data) {
 
   if (m_handlers.find(data[0]) != m_handlers.end())
   {
-    const auto dataResponse = m_handlers[data[0]](client, data);
-    if (!dataResponse.isEmpty()) { m_ws.textAll(dataResponse); }
+    m_handlers[data[0]](client, data);
   } else {
     Logger::warn(String("No handler for: ") + data[0]);
   }
@@ -125,14 +116,16 @@ void WebSocket::onPing(AsyncWebSocketClient* client) {
   Logger::debug(String("(") + client->id() + ") WS Ping!");
 }
 
-void WebSocket::sendReady() {
-  m_ws.textAll(String(static_cast< char >(GLOBAL::MSG_TYPE::READY)));
-}
-
-void WebSocket::sendNotReady() {
-  m_ws.textAll(String(static_cast< char >(GLOBAL::MSG_TYPE::NOT_READY)));
+void WebSocket::send(String msg) {
+  Logger::debug("Sending: " + msg);
+  m_ws.textAll(msg);
+  Logger::debug("Sent");
 }
 
 void WebSocket::sendLostControl(AsyncWebSocketClient* client) {
-  client->text(String(static_cast< char >(GLOBAL::MSG_TYPE::LOST_CONTROL)));
+  auto str = String(static_cast< char >(GLOBAL::MSG_TYPE::LOST_CONTROL));
+
+  Logger::debug("Sending: " + str);
+
+  client->text(str);
 }
