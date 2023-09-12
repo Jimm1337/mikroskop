@@ -65,41 +65,43 @@ const TYPE_CAL_RESET_D = "d";
 const TYPE_CAL_RESET_STEP = "t";
 const TYPE_READY = "Y"; // RECEIVE ONLY
 const TYPE_NOT_READY = "N"; // RECEIVE ONLY
-const TYPE_MANUAL_START_LEFT = "M"; // SEND ONLY
-const TYPE_MANUAL_START_RIGHT = "m"; // SEND ONLY
-const TYPE_MANUAL_START_UPPER = "X"; // SEND ONLY
-const TYPE_MANUAL_START_LOWER = "x"; // SEND ONLY
-const TYPE_MANUAL_START_UP = "W"; // SEND ONLY
-const TYPE_MANUAL_START_DOWN = "w"; // SEND ONLY
-const TYPE_MANUAL_STOP_LEFT = "O"; // SEND ONLY
-const TYPE_MANUAL_STOP_RIGHT = "o"; // SEND ONLY
-const TYPE_MANUAL_STOP_UPPER = "Z"; // SEND ONLY
-const TYPE_MANUAL_STOP_LOWER = "z"; // SEND ONLY
-const TYPE_MANUAL_STOP_UP = "Q"; // SEND ONLY
-const TYPE_MANUAL_STOP_DOWN = "q"; // SEND ONLY
-const TYPE_MANUAL_CONFIRM = "K"; // RECEIVE ONLY
+const TYPE_MANUAL_START_LEFT = "M";
+const TYPE_MANUAL_START_RIGHT = "m";
+const TYPE_MANUAL_START_UPPER = "X";
+const TYPE_MANUAL_START_LOWER = "x";
+const TYPE_MANUAL_START_UP = "W";
+const TYPE_MANUAL_START_DOWN = "w";
+const TYPE_MANUAL_STOP_LEFT = "O";
+const TYPE_MANUAL_STOP_RIGHT = "o";
+const TYPE_MANUAL_STOP_UPPER = "Z";
+const TYPE_MANUAL_STOP_LOWER = "z";
+const TYPE_MANUAL_STOP_UP = "Q";
+const TYPE_MANUAL_STOP_DOWN = "q";
+const TYPE_MANUAL_CONFIRM = "K";
+const TYPE_INFO = "i"; // RECEIVE ONLY
+const TYPE_TIME = "t";
+const TYPE_LOST_CONTROL = "L"; // RECEIVE ONLY
 
 //////////////////////////////////////////////////////////////////////////////////////////
 // Message data
 //////////////////////////////////////////////////////////////////////////////////////////
 
-const DATA_TIME_1_4000 = "1";
-const DATA_TIME_1_2000 = "2";
-const DATA_TIME_1_1000 = "3";
-const DATA_TIME_1_500 = "4";
-const DATA_TIME_1_250 = "5";
-const DATA_TIME_1_125 = "6";
-const DATA_TIME_1_60 = "7";
-const DATA_TIME_1_30 = "8";
-const DATA_TIME_1_15 = "9";
-const DATA_TIME_1_8 = "a";
-const DATA_TIME_1_4 = "b";
-const DATA_TIME_1_2 = "c";
-const DATA_TIME_1 = "d";
-const DATA_TIME_2 = "e";
-const DATA_TIME_5 = "f";
-const DATA_TIME_10 = "g";
-const DATA_PROGRESS = "P"; // RECEIVE ONLY
+const DATA_TIME_1_4000 = "0";
+const DATA_TIME_1_2000 = "1";
+const DATA_TIME_1_1000 = "2";
+const DATA_TIME_1_500 = "3";
+const DATA_TIME_1_250 = "4";
+const DATA_TIME_1_125 = "5";
+const DATA_TIME_1_60 = "6";
+const DATA_TIME_1_30 = "7";
+const DATA_TIME_1_15 = "8";
+const DATA_TIME_1_8 = "9";
+const DATA_TIME_1_4 = "a";
+const DATA_TIME_1_2 = "b";
+const DATA_TIME_1 = "c";
+const DATA_TIME_2 = "d";
+const DATA_TIME_5 = "e";
+const DATA_TIME_10 = "f";
 
 //////////////////////////////////////////////////////////////////////////////////////////
 // Constants
@@ -110,6 +112,12 @@ const COLOR_PROGRESS = "linear-gradient(to right, #E3D400, #E3D400);";
 const COLOR_OFF = "linear-gradient(to right, #A82C1C, #A82C1C);";
 const COLOR_LEFT_PROGRESS = "linear-gradient(to right, #E3D400, #A82C1C);";
 const COLOR_RIGHT_PROGRESS = "linear-gradient(to right, #54A81C, #E3D400);";
+
+//////////////////////////////////////////////////////////////////////////////////////////
+// Global variables
+//////////////////////////////////////////////////////////////////////////////////////////
+
+let hasManualControl = false;
 
 //////////////////////////////////////////////////////////////////////////////////////////
 // init
@@ -129,13 +137,8 @@ function onOpen(evt) {
     console.log("Connected: " + evt.data);
 
     setStatus(statusConnection, COLOR_ON);
-    setStatus(statusManual, COLOR_ON);
 
-    radioTime_1_4.checked = true; // Default to 1/4 second
-
-    enableManualControl();
-    enableCalButton();
-    enableRadioButtons();
+    doSend(makeMessage(TYPE_INFO, ""));
 }
 
 function onClose(evt) { // TODO: also handle this case in ESP
@@ -158,6 +161,8 @@ function onClose(evt) { // TODO: also handle this case in ESP
     disableCalPosButtons();
     disableStartButton();
     disableRadioButtons();
+
+    hasManualControl = false;
 
     // Try to reconnect after a few seconds
     setTimeout(function () {
@@ -183,46 +188,110 @@ function onMessage(evt) {
             setStatus(statusUp, COLOR_OFF);
             setStatus(statusDown, COLOR_OFF);
             setStatus(statusStep, COLOR_OFF);
+            setStatus(statusManual, COLOR_ON);
+            enableManualControl();
+            hasManualControl = true;
             enableCalPosButtons();
             break;
-        case TYPE_CAL_UL: // Received on progress(data_progress)/set Upper Left
-            if (msgData[0] === DATA_PROGRESS) {
-                setStatus(statusLowerRight, COLOR_PROGRESS);
-            } else {
-                setStatus(statusLowerRight, COLOR_ON);
+        case TYPE_CAL_UL: // Received on progress
+            if (isProgress(statusLowerRight)) {
+                setStatus(statusLowerRight, COLOR_OFF);
+                btnLowerRight.disabled = false;
             }
+            if (isProgress(statusUp)) {
+                setStatus(statusUp, COLOR_OFF);
+                btnUp.disabled = false;
+            }
+            if (isProgress(statusDown)) {
+                setStatus(statusDown, COLOR_OFF);
+                btnDown.disabled = false;
+            }
+            if (isLeftProgress(statusStep) || isRightProgress(statusStep)) {
+                setStatus(statusStep, COLOR_OFF);
+                btnStep.disabled = false;
+            }
+            setStatus(statusUpperLeft, COLOR_PROGRESS);
+            btnUpperLeft.disabled = true;
             break;
-        case TYPE_CAL_LR: // Received on progress(data_progress)/set Lower Right
-            if (msgData[0] === DATA_PROGRESS) {
-                setStatus(statusUpperLeft, COLOR_PROGRESS);
-            } else {
-                setStatus(statusUpperLeft, COLOR_ON);
+        case TYPE_CAL_LR: // Received on progress
+            if (isProgress(statusUpperLeft)) {
+                setStatus(statusUpperLeft, COLOR_OFF);
+                btnUpperLeft.disabled = false;
             }
+            if (isProgress(statusUp)) {
+                setStatus(statusUp, COLOR_OFF);
+                btnUp.disabled = false;
+            }
+            if (isProgress(statusDown)) {
+                setStatus(statusDown, COLOR_OFF);
+                btnDown.disabled = false;
+            }
+            if (isLeftProgress(statusStep) || isRightProgress(statusStep)) {
+                setStatus(statusStep, COLOR_OFF);
+                btnStep.disabled = false;
+            }
+            setStatus(statusLowerRight, COLOR_PROGRESS);
+            btnLowerRight.disabled = true;
             break;
-        case TYPE_CAL_UP: // Received on progress(data_progress)/set Up
-            if (msgData[0] === DATA_PROGRESS) {
-                setStatus(statusStep, COLOR_PROGRESS);
-            } else {
-                setStatus(statusStep, COLOR_ON);
+        case TYPE_CAL_UP: // Received on progress
+            if (isProgress(statusUpperLeft)) {
+                setStatus(statusUpperLeft, COLOR_OFF);
+                btnUpperLeft.disabled = false;
             }
+            if (isProgress(statusLowerRight)) {
+                setStatus(statusLowerRight, COLOR_OFF);
+                btnLowerRight.disabled = false;
+            }
+            if (isProgress(statusDown)) {
+                setStatus(statusDown, COLOR_OFF);
+                btnDown.disabled = false;
+            }
+            if (isLeftProgress(statusStep) || isRightProgress(statusStep)) {
+                setStatus(statusStep, COLOR_OFF);
+                btnStep.disabled = false;
+            }
+            setStatus(statusUp, COLOR_PROGRESS);
+            btnUp.disabled = true;
             break;
-        case TYPE_CAL_DOWN: // Received on progress(data_progress)/set Down
-            if (msgData[0] === DATA_PROGRESS) {
-                setStatus(statusStep, COLOR_PROGRESS);
-            } else {
-                setStatus(statusStep, COLOR_ON);
+        case TYPE_CAL_DOWN: // Received on progress
+            if (isProgress(statusUpperLeft)) {
+                setStatus(statusUpperLeft, COLOR_OFF);
+                btnUpperLeft.disabled = false;
             }
+            if (isProgress(statusLowerRight)) {
+                setStatus(statusLowerRight, COLOR_OFF);
+                btnLowerRight.disabled = false;
+            }
+            if (isProgress(statusUp)) {
+                setStatus(statusUp, COLOR_OFF);
+                btnUp.disabled = false;
+            }
+            if (isLeftProgress(statusStep) || isRightProgress(statusStep)) {
+                setStatus(statusStep, COLOR_OFF);
+                btnStep.disabled = false;
+            }
+            setStatus(statusDown, COLOR_PROGRESS);
+            btnDown.disabled = true;
             break;
-        case TYPE_CAL_STEP: // Received on progress(data_progress)/set Step
-            if (msgData[0] === DATA_PROGRESS) {
-                if (isLeftProgress(statusStep)) {
-                    setStatus(statusStep, COLOR_RIGHT_PROGRESS);
-                } else {
-                    setStatus(statusStep, COLOR_LEFT_PROGRESS)
-                }
-            } else {
-                setStatus(statusStep, COLOR_ON);
+        case TYPE_CAL_STEP: // Received on progress
+            if (isProgress(statusUpperLeft)) {
+                setStatus(statusUpperLeft, COLOR_OFF);
+                btnUpperLeft.disabled = false;
             }
+            if (isProgress(statusLowerRight)) {
+                setStatus(statusLowerRight, COLOR_OFF);
+                btnLowerRight.disabled = false;
+            }
+            if (isProgress(statusUp)) {
+                setStatus(statusUp, COLOR_OFF);
+                btnUp.disabled = false;
+            }
+            if (isProgress(statusDown)) {
+                setStatus(statusDown, COLOR_OFF);
+                btnDown.disabled = false;
+            }
+            setStatus(statusStep, COLOR_LEFT_PROGRESS);
+            btnStep.disabled = true;
             break;
         case TYPE_CAL_RESET_UL: // Received on reset Upper Left
             setStatus(statusUpperLeft, COLOR_OFF);
@@ -248,11 +317,19 @@ function onMessage(evt) {
             setStatus(statusManual, COLOR_OFF);
             disableManualControl();
             toggleStartStopDisplay();
+            disableCalButton();
+            disableRadioButtons();
+            disableRadioButtons();
             break;
         case TYPE_STOP: // Received on stop/end of movement
-            setStatus(statusManual, COLOR_ON);
-            enableManualControl();
             toggleStartStopDisplay();
+            if (hasManualControl) {
+                setStatus(statusManual, COLOR_ON);
+                enableManualControl();
+                enableCalPosButtons();
+            }
+            enableCalButton();
+            enableRadioButtons();
             break;
         case TYPE_READY: // Received on ready
             enableStartButton();
@@ -260,8 +337,75 @@ function onMessage(evt) {
         case TYPE_NOT_READY: // Received on not ready
             disableStartButton();
             break;
+        case TYPE_INFO: // Received on info (on connect)
+            processInfo(msgData);
+            break;
+        case TYPE_TIME: // Received on time change
+            setRadio(msgData);
+            break;
+        case TYPE_MANUAL_START_LEFT: // Received on manual start left
+            console.log("Manual start left");
+            break;
+        case TYPE_MANUAL_START_RIGHT: // Received on manual start right
+            console.log("Manual start right");
+            break;
+        case TYPE_MANUAL_START_UPPER: // Received on manual start upper
+            console.log("Manual start upper");
+            break;
+        case TYPE_MANUAL_START_LOWER: // Received on manual start lower
+            console.log("Manual start lower");
+            break;
+        case TYPE_MANUAL_START_UP: // Received on manual start up
+            console.log("Manual start up");
+            break;
+        case TYPE_MANUAL_START_DOWN: // Received on manual start down
+            console.log("Manual start down");
+            break;
+        case TYPE_MANUAL_STOP_LEFT: // Received on manual stop left
+            console.log("Manual stop left");
+            break;
+        case TYPE_MANUAL_STOP_RIGHT: // Received on manual stop right
+            console.log("Manual stop right");
+            break;
+        case TYPE_MANUAL_STOP_UPPER: // Received on manual stop upper
+            console.log("Manual stop upper");
+            break;
+        case TYPE_MANUAL_STOP_LOWER: // Received on manual stop lower
+            console.log("Manual stop lower");
+            break;
+        case TYPE_MANUAL_STOP_UP: // Received on manual stop up
+            console.log("Manual stop up");
+            break;
+        case TYPE_MANUAL_STOP_DOWN: // Received on manual stop down
+            console.log("Manual stop down");
+            break;
+        case TYPE_MANUAL_CONFIRM: // Received on manual confirm
+            if (isProgress(statusUpperLeft)) {
+                setStatus(statusUpperLeft, COLOR_ON);
+                btnUpperLeft.disabled = false;
+            } else if (isProgress(statusLowerRight)) {
+                setStatus(statusLowerRight, COLOR_ON);
+                btnLowerRight.disabled = false;
+            } else if (isProgress(statusUp)) {
+                setStatus(statusUp, COLOR_ON);
+                btnUp.disabled = false;
+            } else if (isProgress(statusDown)) {
+                setStatus(statusDown, COLOR_ON);
+                btnDown.disabled = false;
+            } else if (isLeftProgress(statusStep)) {
+                setStatus(statusStep, COLOR_RIGHT_PROGRESS);
+            } else if (isRightProgress(statusStep)) {
+                setStatus(statusStep, COLOR_ON);
+                btnStep.disabled = false;
+            }
+            break;
+        case TYPE_LOST_CONTROL: // Received on lost manual control
+            setStatus(statusManual, COLOR_OFF);
+            disableManualControl();
+            disableCalPosButtons();
+            hasManualControl = false;
+            break;
         default:
-            console.log("Unknown message type: " + msgType);
             break;
     }
 }
@@ -315,30 +459,79 @@ function calResetStep() {
 }
 
 function ctrlStart() {
-    // Determine which radio button is checked
-    const data = //TODO: Change this yuck!
-        (radioTime_1_4000.checked ? DATA_TIME_1_4000 :
-            radioTime_1_2000.checked ? DATA_TIME_1_2000 :
-                radioTime_1_1000.checked ? DATA_TIME_1_1000 :
-                    radioTime_1_500.checked ? DATA_TIME_1_500 :
-                        radioTime_1_250.checked ? DATA_TIME_1_250 :
-                            radioTime_1_125.checked ? DATA_TIME_1_125 :
-                                radioTime_1_60.checked ? DATA_TIME_1_60 :
-                                    radioTime_1_30.checked ? DATA_TIME_1_30 :
-                                        radioTime_1_15.checked ? DATA_TIME_1_15 :
-                                            radioTime_1_8.checked ? DATA_TIME_1_8 :
-                                                radioTime_1_4.checked ? DATA_TIME_1_4 :
-                                                    radioTime_1_2.checked ? DATA_TIME_1_2 :
-                                                        radioTime_1.checked ? DATA_TIME_1 :
-                                                            radioTime_2.checked ? DATA_TIME_2 :
-                                                                radioTime_5.checked ? DATA_TIME_5 :
-                                                                    radioTime_10.checked ? DATA_TIME_10 : "");
-
-    doSend(makeMessage(TYPE_START, data));
+    doSend(makeMessage(TYPE_START, ""));
 }
 
 function ctrlStop() {
     doSend(makeMessage(TYPE_STOP, ""));
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////
+// Radio callbacks
+//////////////////////////////////////////////////////////////////////////////////////////
+
+function changeRT1_4000() {
+    onRadioChange(radioTime_1_4000, DATA_TIME_1_4000);
+}
+
+function changeRT1_2000() {
+    onRadioChange(radioTime_1_2000, DATA_TIME_1_2000);
+}
+
+function changeRT1_1000() {
+    onRadioChange(radioTime_1_1000, DATA_TIME_1_1000);
+}
+
+function changeRT1_500() {
+    onRadioChange(radioTime_1_500, DATA_TIME_1_500);
+}
+
+function changeRT1_250() {
+    onRadioChange(radioTime_1_250, DATA_TIME_1_250);
+}
+
+function changeRT1_125() {
+    onRadioChange(radioTime_1_125, DATA_TIME_1_125);
+}
+
+function changeRT1_60() {
+    onRadioChange(radioTime_1_60, DATA_TIME_1_60);
+}
+
+function changeRT1_30() {
+    onRadioChange(radioTime_1_30, DATA_TIME_1_30);
+}
+
+function changeRT1_15() {
+    onRadioChange(radioTime_1_15, DATA_TIME_1_15);
+}
+
+function changeRT1_8() {
+    onRadioChange(radioTime_1_8, DATA_TIME_1_8);
+}
+
+function changeRT1_4() {
+    onRadioChange(radioTime_1_4, DATA_TIME_1_4);
+}
+
+function changeRT1_2() {
+    onRadioChange(radioTime_1_2, DATA_TIME_1_2);
+}
+
+function changeRT1() {
+    onRadioChange(radioTime_1, DATA_TIME_1);
+}
+
+function changeRT2() {
+    onRadioChange(radioTime_2, DATA_TIME_2);
+}
+
+function changeRT5() {
+    onRadioChange(radioTime_5, DATA_TIME_5);
+}
+
+function changeRT10() {
+    onRadioChange(radioTime_10, DATA_TIME_10);
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////
@@ -527,6 +720,182 @@ function enableManualControl() {
 function disableManualControl() {
     window.removeEventListener("keydown", listenerKeyDown, true);
     window.removeEventListener("keyup", listenerKeyUp, true);
+}
+
+function processInfo(data) {
+    // idx 0: time radio (0-9 || a-f || ' ') - ' ' = not set
+    // idx 1: running (0,1)
+    // idx 2: calibrating ul (0,1, D) - D = done
+    // idx 3: calibrating lr (0,1, D) - D = done
+    // idx 4: calibrating up (0,1, D) - D = done
+    // idx 5: calibrating down (0,1, D) - D = done
+    // idx 6: calibrating step (0,1,2, D) - D = done
+
+    setRadio(data[0]);
+    if (data[1] === "1") {
+        toggleStartStopDisplay();
+        disableCalButton();
+        disableCalPosButtons();
+        disableRadioButtons();
+        setStatus(statusManual, COLOR_OFF);
+        disableManualControl();
+        hasManualControl = false;
+    }
+    infoSetButtons(data[2], data[3], data[4], data[5], data[6]);
+}
+
+function setRadio(radioChar) {
+    switch (radioChar) {
+        case DATA_TIME_1_4000:
+            radioTime_1_4000.checked = true;
+            break;
+        case DATA_TIME_1_2000:
+            radioTime_1_2000.checked = true;
+            break;
+        case DATA_TIME_1_1000:
+            radioTime_1_1000.checked = true;
+            break;
+        case DATA_TIME_1_500:
+            radioTime_1_500.checked = true;
+            break;
+        case DATA_TIME_1_250:
+            radioTime_1_250.checked = true;
+            break;
+        case DATA_TIME_1_125:
+            radioTime_1_125.checked = true;
+            break;
+        case DATA_TIME_1_60:
+            radioTime_1_60.checked = true;
+            break;
+        case DATA_TIME_1_30:
+            radioTime_1_30.checked = true;
+            break;
+        case DATA_TIME_1_15:
+            radioTime_1_15.checked = true;
+            break;
+        case DATA_TIME_1_8:
+            radioTime_1_8.checked = true;
+            break;
+        case DATA_TIME_1_4:
+            radioTime_1_4.checked = true;
+            break;
+        case DATA_TIME_1_2:
+            radioTime_1_2.checked = true;
+            break;
+        case DATA_TIME_1:
+            radioTime_1.checked = true;
+            break;
+        case DATA_TIME_2:
+            radioTime_2.checked = true;
+            break;
+        case DATA_TIME_5:
+            radioTime_5.checked = true;
+            break;
+        case DATA_TIME_10:
+            radioTime_10.checked = true;
+            break;
+        case " ":
+            break;
+        default:
+            console.log("Unknown radio: " + radio);
+    }
+}
+
+function infoSetButtons(ul, lr, up, down, step) {
+    switch (ul) {
+        case "0":
+            setStatus(statusUpperLeft, COLOR_OFF);
+            btnUpperLeft.disabled = false;
+            break;
+        case "1":
+            setStatus(statusUpperLeft, COLOR_PROGRESS);
+            btnUpperLeft.disabled = true;
+            break;
+        case "D":
+            setStatus(statusUpperLeft, COLOR_ON);
+            btnUpperLeft.disabled = false;
+            break;
+        default:
+            console.log("Unknown upper left: " + ul);
+    }
+
+    switch (lr) {
+        case "0":
+            setStatus(statusLowerRight, COLOR_OFF);
+            btnLowerRight.disabled = false;
+            break;
+        case "1":
+            setStatus(statusLowerRight, COLOR_PROGRESS);
+            btnLowerRight.disabled = true;
+            break;
+        case "D":
+            setStatus(statusLowerRight, COLOR_ON);
+            btnLowerRight.disabled = false;
+            break;
+        default:
+            console.log("Unknown lower right: " + ul);
+    }
+
+    switch (up) {
+        case "0":
+            setStatus(statusUp, COLOR_OFF);
+            btnUp.disabled = false;
+            break;
+        case "1":
+            setStatus(statusUp, COLOR_PROGRESS);
+            btnUp.disabled = true;
+            break;
+        case "D":
+            setStatus(statusUp, COLOR_ON);
+            btnUp.disabled = false;
+            break;
+        default:
+            console.log("Unknown up: " + ul);
+    }
+
+    switch (down) {
+        case "0":
+            setStatus(statusDown, COLOR_OFF);
+            btnDown.disabled = false;
+            break;
+        case "1":
+            setStatus(statusDown, COLOR_PROGRESS);
+            btnDown.disabled = true;
+            break;
+        case "D":
+            setStatus(statusDown, COLOR_ON);
+            btnDown.disabled = false;
+            break;
+        default:
+            console.log("Unknown down: " + ul);
+    }
+
+    switch (step) {
+        case "0":
+            setStatus(statusUpperLeft, COLOR_OFF);
+            btnUpperLeft.disabled = false;
+            break;
+        case "1":
+            setStatus(statusUpperLeft, COLOR_LEFT_PROGRESS);
+            btnUpperLeft.disabled = true;
+            break;
+        case "2":
+            setStatus(statusUpperLeft, COLOR_RIGHT_PROGRESS);
+            btnUpperLeft.disabled = true;
+            break;
+        case "D":
+            setStatus(statusUpperLeft, COLOR_ON);
+            btnUpperLeft.disabled = false;
+            break;
+        default:
+            console.log("Unknown step: " + ul);
+    }
+}
+
+function onRadioChange(radio, data) {
+    if (radio.checked) {
+        doSend(makeMessage(TYPE_TIME, data));
+    }
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////

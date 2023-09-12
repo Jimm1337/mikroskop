@@ -1,25 +1,16 @@
 #include <Arduino.h>
-#include <WiFi.h>
 #include "Global.h"
 #include "HTTPServer.h"
-#include "Logger.h"
 #include "Motors.h"
 #include "WebSocket.h"
 
-static constexpr auto     SSID      = "Mikroskop";
-static constexpr auto     PASS      = "pn_mikroskop";
-static constexpr uint16_t HTTP_PORT = 80;
-static constexpr uint16_t WS_PORT   = 1337;
-
 void setup() {
-  Global::setup();
-
-  WiFi.softAP(SSID, PASS);
-  Logger::info("AP running");
-  Logger::info("ESP IP: " + WiFi.softAPIP().toString());
+  GLOBAL::setup(); // Serial, SPIFFS, WiFi
 }
 
 void loop() {
+  using namespace GLOBAL::SETTINGS;
+
   static WebSocket        wsServer(WS_PORT, "/");
   static const Motors     motors(&wsServer);
   static const HTTPServer httpServer(HTTP_PORT);
