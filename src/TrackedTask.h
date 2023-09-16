@@ -20,9 +20,11 @@ public:
 
   template< typename Fn, typename... Args >
   explicit TrackedTask(bool overlapping, Fn&& task, Args&&... args):
-    m_running(false), m_finished(false), m_overlapping(overlapping) {
+    m_overlapping(overlapping) {
+    m_running = false;
+    m_finished = false;
     m_thread = std::thread(
-      [this](Fn&& task, Args&&... args) { // TODO: ctidy: ??
+      [this](Fn&& task, Args&&... args) { // TODO: clang-tidy: ??
         tracked(std::forward< Fn >(task), std::forward< Args >(args)...);
       },
       std::forward< Fn >(task),
@@ -48,9 +50,10 @@ public:
         m_thread.detach();
       }
 
-      m_thread   = std::move(other.m_thread);
       m_running  = other.m_running.load();
       m_finished = other.m_finished.load();
+      m_overlapping = other.m_overlapping.load();
+      m_thread   = std::move(other.m_thread);
     }
     return *this;
   }

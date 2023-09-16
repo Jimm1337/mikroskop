@@ -50,68 +50,68 @@ let radioTime_10;
 // Message types
 //////////////////////////////////////////////////////////////////////////////////////////
 
-const TYPE_START = "S";
-const TYPE_STOP = "#";
-const TYPE_CAL_START = "C";
-const TYPE_CAL_UL = "L";
-const TYPE_CAL_LR = "R";
-const TYPE_CAL_UP = "U";
-const TYPE_CAL_DOWN = "D";
-const TYPE_CAL_STEP = "T";
-const TYPE_CAL_RESET_UL = "l";
-const TYPE_CAL_RESET_LR = "r";
-const TYPE_CAL_RESET_U = "u";
-const TYPE_CAL_RESET_D = "d";
-const TYPE_CAL_RESET_STEP = "t";
-const TYPE_READY = "Y"; // RECEIVE ONLY
-const TYPE_NOT_READY = "N"; // RECEIVE ONLY
-const TYPE_MANUAL_START_LEFT = "M";
-const TYPE_MANUAL_START_RIGHT = "m";
-const TYPE_MANUAL_START_UPPER = "X";
-const TYPE_MANUAL_START_LOWER = "x";
-const TYPE_MANUAL_START_UP = "W";
-const TYPE_MANUAL_START_DOWN = "w";
-const TYPE_MANUAL_STOP_LEFT = "O";
-const TYPE_MANUAL_STOP_RIGHT = "o";
-const TYPE_MANUAL_STOP_UPPER = "Z";
-const TYPE_MANUAL_STOP_LOWER = "z";
-const TYPE_MANUAL_STOP_UP = "Q";
-const TYPE_MANUAL_STOP_DOWN = "q";
-const TYPE_MANUAL_CONFIRM = "K";
-const TYPE_INFO = "i"; // RECEIVE ONLY
-const TYPE_TIME = "y";
-const TYPE_LOST_CONTROL = "L"; // RECEIVE ONLY
+const TYPE_START = 'S';
+const TYPE_STOP = '#';
+const TYPE_CAL_START = 'C';
+const TYPE_CAL_UL = 'L';
+const TYPE_CAL_LR = 'R';
+const TYPE_CAL_UP = 'U';
+const TYPE_CAL_DOWN = 'D';
+const TYPE_CAL_STEP = 'T';
+const TYPE_CAL_RESET_UL = 'l';
+const TYPE_CAL_RESET_LR = 'r';
+const TYPE_CAL_RESET_U = 'u';
+const TYPE_CAL_RESET_D = 'd';
+const TYPE_CAL_RESET_STEP = 't';
+const TYPE_READY = 'Y'; // RECEIVE ONLY
+const TYPE_NOT_READY = 'N'; // RECEIVE ONLY
+const TYPE_MANUAL_START_LEFT = 'M';
+const TYPE_MANUAL_START_RIGHT = 'm';
+const TYPE_MANUAL_START_UPPER = 'X';
+const TYPE_MANUAL_START_LOWER = 'x';
+const TYPE_MANUAL_START_UP = 'W';
+const TYPE_MANUAL_START_DOWN = 'w';
+const TYPE_MANUAL_STOP_LEFT = 'O';
+const TYPE_MANUAL_STOP_RIGHT = 'o';
+const TYPE_MANUAL_STOP_UPPER = 'Z';
+const TYPE_MANUAL_STOP_LOWER = 'z';
+const TYPE_MANUAL_STOP_UP = 'Q';
+const TYPE_MANUAL_STOP_DOWN = 'q';
+const TYPE_MANUAL_CONFIRM = 'K';
+const TYPE_INFO = 'i'; // RECEIVE ONLY
+const TYPE_TIME = 'y';
+const TYPE_LOST_CONTROL = ']'; // RECEIVE ONLY
 
 //////////////////////////////////////////////////////////////////////////////////////////
 // Message data
 //////////////////////////////////////////////////////////////////////////////////////////
 
-const DATA_TIME_1_4000 = "0";
-const DATA_TIME_1_2000 = "1";
-const DATA_TIME_1_1000 = "2";
-const DATA_TIME_1_500 = "3";
-const DATA_TIME_1_250 = "4";
-const DATA_TIME_1_125 = "5";
-const DATA_TIME_1_60 = "6";
-const DATA_TIME_1_30 = "7";
-const DATA_TIME_1_15 = "8";
-const DATA_TIME_1_8 = "9";
-const DATA_TIME_1_4 = "a";
-const DATA_TIME_1_2 = "b";
-const DATA_TIME_1 = "c";
-const DATA_TIME_2 = "d";
-const DATA_TIME_5 = "e";
-const DATA_TIME_10 = "f";
+const DATA_TIME_1_4000 = '0';
+const DATA_TIME_1_2000 = '1';
+const DATA_TIME_1_1000 = '2';
+const DATA_TIME_1_500 = '3';
+const DATA_TIME_1_250 = '4';
+const DATA_TIME_1_125 = '5';
+const DATA_TIME_1_60 = '6';
+const DATA_TIME_1_30 = '7';
+const DATA_TIME_1_15 = '8';
+const DATA_TIME_1_8 = '9';
+const DATA_TIME_1_4 = 'a';
+const DATA_TIME_1_2 = 'b';
+const DATA_TIME_1 = 'c';
+const DATA_TIME_2 = 'd';
+const DATA_TIME_5 = 'e';
+const DATA_TIME_10 = 'f';
 
 //////////////////////////////////////////////////////////////////////////////////////////
 // Constants
 //////////////////////////////////////////////////////////////////////////////////////////
 
-const COLOR_ON = 'linear-gradient(to right, #54A81C, #54A81C);';
-const COLOR_PROGRESS = 'linear-gradient(to right, #E3D400, #E3D400);';
-const COLOR_OFF = 'linear-gradient(to right, #A82C1C, #A82C1C);';
-const COLOR_LEFT_PROGRESS = 'linear-gradient(to right, #E3D400, #A82C1C);';
-const COLOR_RIGHT_PROGRESS = 'linear-gradient(to right, #54A81C, #E3D400);';
+const COLOR_ON = '#54a81c';
+const COLOR_PROGRESS = '#e3d400';
+const COLOR_OFF = '#a82c1c';
+const COLOR_LEFT_PROGRESS = '#e39000';
+const COLOR_RIGHT_PROGRESS = '#b2e300';
 
 //////////////////////////////////////////////////////////////////////////////////////////
 // Global variables
@@ -125,6 +125,15 @@ let manualLowerLock = false;
 let manualUpLock = false;
 let manualDownLock = false;
 let manualConfLock = false;
+
+let calibratingUL = false;
+let calibratingLR = false;
+let calibratingUp = false;
+let calibratingDown = false;
+let calibratingStepStart = false;
+let calibratingStepEnd = false;
+
+let started = false;
 
 //////////////////////////////////////////////////////////////////////////////////////////
 // init
@@ -143,23 +152,23 @@ function init() {
 function onOpen(evt) {
     console.log("Connected: " + evt.data);
 
-    setStatus(statusConnection, COLOR_ON);
+    setStatusColor(statusConnection, COLOR_ON);
 
     doSend(makeMessage(TYPE_INFO, ""));
 }
 
-function onClose(evt) { // TODO: also handle this case in ESP
+function onClose(evt) {
     console.log("Disconnected: " + evt.data);
 
-    setStatus(statusConnection, COLOR_OFF);
-    setStatus(statusManual, COLOR_OFF);
-    setStatus(statusUpperLeft, COLOR_OFF);
-    setStatus(statusLowerRight, COLOR_OFF);
-    setStatus(statusUp, COLOR_OFF);
-    setStatus(statusDown, COLOR_OFF);
-    setStatus(statusStep, COLOR_OFF);
+    setStatusColor(statusConnection, COLOR_OFF);
+    setStatusColor(statusManual, COLOR_OFF);
+    setStatusColor(statusUpperLeft, COLOR_OFF);
+    setStatusColor(statusLowerRight, COLOR_OFF);
+    setStatusColor(statusUp, COLOR_OFF);
+    setStatusColor(statusDown, COLOR_OFF);
+    setStatusColor(statusStep, COLOR_OFF);
 
-    if (btnStart.display === "none") {
+    if (started) {
         toggleStartStopDisplay();
     }
 
@@ -170,6 +179,12 @@ function onClose(evt) { // TODO: also handle this case in ESP
     disableRadioButtons();
 
     hasManualControl = false;
+    calibratingUL = false;
+    calibratingLR = false;
+    calibratingUp = false;
+    calibratingDown = false;
+    calibratingStepStart = false;
+    calibratingStepEnd = false;
 
     // Try to reconnect after a few seconds
     setTimeout(function () {
@@ -190,142 +205,181 @@ function onMessage(evt) {
 
     switch (msgType) {
         case TYPE_CAL_START: // Received on start calibration
-            setStatus(statusUpperLeft, COLOR_OFF);
-            setStatus(statusLowerRight, COLOR_OFF);
-            setStatus(statusUp, COLOR_OFF);
-            setStatus(statusDown, COLOR_OFF);
-            setStatus(statusStep, COLOR_OFF);
-            setStatus(statusManual, COLOR_ON);
+            setStatusColor(statusUpperLeft, COLOR_OFF);
+            calibratingUL = false;
+            setStatusColor(statusLowerRight, COLOR_OFF);
+            calibratingLR = false;
+            setStatusColor(statusUp, COLOR_OFF);
+            calibratingUp = false;
+            setStatusColor(statusDown, COLOR_OFF);
+            calibratingDown = false;
+            setStatusColor(statusStep, COLOR_OFF);
+            calibratingStepStart = false;
+            setStatusColor(statusManual, COLOR_ON);
             enableManualControl();
             hasManualControl = true;
             enableCalPosButtons();
             break;
         case TYPE_CAL_UL: // Received on progress
-            if (isProgress(statusLowerRight)) {
-                setStatus(statusLowerRight, COLOR_OFF);
+            btnUpperLeft.disabled = false;
+            if (calibratingLR) {
+                setStatusColor(statusLowerRight, COLOR_OFF);
+                calibratingLR = false;
             }
             btnLowerRight.disabled = false;
-            if (isProgress(statusUp)) {
-                setStatus(statusUp, COLOR_OFF);
-
+            if (calibratingUp) {
+                setStatusColor(statusUp, COLOR_OFF);
+                calibratingUp = false;
             }
             btnUp.disabled = false;
-            if (isProgress(statusDown)) {
-                setStatus(statusDown, COLOR_OFF);
-
+            if (calibratingDown) {
+                setStatusColor(statusDown, COLOR_OFF);
+                calibratingDown = false;
             }
             btnDown.disabled = false;
-            if (isLeftProgress(statusStep) || isRightProgress(statusStep)) {
-                setStatus(statusStep, COLOR_OFF);
-
+            if (calibratingStepStart || calibratingStepEnd) {
+                setStatusColor(statusStep, COLOR_OFF);
+                calibratingStepStart = false;
+                calibratingStepEnd = false;
             }
             btnStep.disabled = false;
-            setStatus(statusUpperLeft, COLOR_PROGRESS);
+            setStatusColor(statusUpperLeft, COLOR_PROGRESS);
+            calibratingUL = true;
             btnUpperLeft.disabled = true;
             break;
         case TYPE_CAL_LR: // Received on progress
-            if (isProgress(statusUpperLeft)) {
-                setStatus(statusUpperLeft, COLOR_OFF);
+            if (calibratingUL) {
+                setStatusColor(statusUpperLeft, COLOR_OFF);
+                calibratingUL = false;
             }
             btnUpperLeft.disabled = false;
-            if (isProgress(statusUp)) {
-                setStatus(statusUp, COLOR_OFF);
+            if (calibratingUp) {
+                setStatusColor(statusUp, COLOR_OFF);
+                calibratingUp = false;
             }
             btnUp.disabled = false;
-            if (isProgress(statusDown)) {
-                setStatus(statusDown, COLOR_OFF);
+            if (calibratingDown) {
+                setStatusColor(statusDown, COLOR_OFF);
+                calibratingDown = false;
             }
             btnDown.disabled = false;
-            if (isLeftProgress(statusStep) || isRightProgress(statusStep)) {
-                setStatus(statusStep, COLOR_OFF);
+            if (calibratingStepStart || calibratingStepEnd) {
+                setStatusColor(statusStep, COLOR_OFF);
+                calibratingStepStart = false;
+                calibratingStepEnd = false;
             }
             btnStep.disabled = false;
-            setStatus(statusLowerRight, COLOR_PROGRESS);
+            setStatusColor(statusLowerRight, COLOR_PROGRESS);
+            calibratingLR = true;
             btnLowerRight.disabled = true;
             break;
         case TYPE_CAL_UP: // Received on progress
-            if (isProgress(statusUpperLeft)) {
-                setStatus(statusUpperLeft, COLOR_OFF);
+            if (calibratingUL) {
+                setStatusColor(statusUpperLeft, COLOR_OFF);
+                calibratingUL = false;
             }
             btnUpperLeft.disabled = false;
-            if (isProgress(statusLowerRight)) {
-                setStatus(statusLowerRight, COLOR_OFF);
+            if (calibratingLR) {
+                setStatusColor(statusLowerRight, COLOR_OFF);
+                calibratingLR = false;
             }
             btnLowerRight.disabled = false;
-            if (isProgress(statusDown)) {
-                setStatus(statusDown, COLOR_OFF);
-                btnDown.disabled = false;
+            if (calibratingDown) {
+                setStatusColor(statusDown, COLOR_OFF);
+                calibratingDown = false;
             }
             btnDown.disabled = false;
-            if (isLeftProgress(statusStep) || isRightProgress(statusStep)) {
-                setStatus(statusStep, COLOR_OFF);
+            if (calibratingStepStart || calibratingStepEnd) {
+                setStatusColor(statusStep, COLOR_OFF);
+                calibratingStepStart = false;
+                calibratingStepEnd = false;
             }
             btnStep.disabled = false;
-            setStatus(statusUp, COLOR_PROGRESS);
+            setStatusColor(statusUp, COLOR_PROGRESS);
+            calibratingUp = true;
             btnUp.disabled = true;
             break;
         case TYPE_CAL_DOWN: // Received on progress
-            if (isProgress(statusUpperLeft)) {
-                setStatus(statusUpperLeft, COLOR_OFF);
+            if (calibratingUL) {
+                setStatusColor(statusUpperLeft, COLOR_OFF);
+                calibratingUL = false;
             }
             btnUpperLeft.disabled = false;
-            if (isProgress(statusLowerRight)) {
-                setStatus(statusLowerRight, COLOR_OFF);
+            if (calibratingLR) {
+                setStatusColor(statusLowerRight, COLOR_OFF);
+                calibratingLR = false;
             }
             btnLowerRight.disabled = false;
-            if (isProgress(statusUp)) {
-                setStatus(statusUp, COLOR_OFF);
+            if (calibratingUp) {
+                setStatusColor(statusUp, COLOR_OFF);
+                calibratingUp = false;
             }
             btnUp.disabled = false;
-            if (isLeftProgress(statusStep) || isRightProgress(statusStep)) {
-                setStatus(statusStep, COLOR_OFF);
+            if (calibratingStepStart || calibratingStepEnd) {
+                setStatusColor(statusStep, COLOR_OFF);
+                calibratingStepStart = false;
+                calibratingStepEnd = false;
             }
             btnStep.disabled = false;
-            setStatus(statusDown, COLOR_PROGRESS);
+            setStatusColor(statusDown, COLOR_PROGRESS);
+            calibratingDown = true;
             btnDown.disabled = true;
             break;
         case TYPE_CAL_STEP: // Received on progress
-            if (isProgress(statusUpperLeft)) {
-                setStatus(statusUpperLeft, COLOR_OFF);
+            if (calibratingUL) {
+                setStatusColor(statusUpperLeft, COLOR_OFF);
+                calibratingUL = false;
             }
             btnUpperLeft.disabled = false;
-            if (isProgress(statusLowerRight)) {
-                setStatus(statusLowerRight, COLOR_OFF);
+            if (calibratingLR) {
+                setStatusColor(statusLowerRight, COLOR_OFF);
+                calibratingLR = false;
             }
             btnLowerRight.disabled = false;
-            if (isProgress(statusUp)) {
-                setStatus(statusUp, COLOR_OFF);
+            if (calibratingUp) {
+                setStatusColor(statusUp, COLOR_OFF);
+                calibratingUp = false;
             }
             btnUp.disabled = false;
-            if (isProgress(statusDown)) {
-                setStatus(statusDown, COLOR_OFF);
+            if (calibratingDown) {
+                setStatusColor(statusDown, COLOR_OFF);
+                calibratingDown = false;
             }
             btnDown.disabled = false;
-            setStatus(statusStep, COLOR_LEFT_PROGRESS);
+            setStatusColor(statusStep, COLOR_LEFT_PROGRESS);
+            calibratingStepEnd = false;
+            calibratingStepStart = true;
             btnStep.disabled = true;
             break;
         case TYPE_CAL_RESET_UL: // Received on reset Upper Left
-            setStatus(statusUpperLeft, COLOR_OFF);
+            setStatusColor(statusUpperLeft, COLOR_OFF);
+            calibratingUL = false;
             btnUpperLeft.disabled = false;
             break;
         case TYPE_CAL_RESET_LR: // Received on reset Lower Right
-            setStatus(statusLowerRight, COLOR_OFF);
+            setStatusColor(statusLowerRight, COLOR_OFF);
+            calibratingLR = false;
             btnLowerRight.disabled = false;
             break;
         case TYPE_CAL_RESET_U: // Received on reset Up
-            setStatus(statusUp, COLOR_OFF);
+            setStatusColor(statusUp, COLOR_OFF);
+            calibratingUp = false;
             btnUp.disabled = false;
             break;
         case TYPE_CAL_RESET_D: // Received on reset Down
-            setStatus(statusDown, COLOR_OFF);
+            setStatusColor(statusDown, COLOR_OFF);
+            calibratingDown = false;
             btnDown.disabled = false;
             break;
         case TYPE_CAL_RESET_STEP: // Received on reset Step
-            setStatus(statusStep, COLOR_OFF);
+            setStatusColor(statusStep, COLOR_OFF);
+            calibratingStepStart = false;
+            calibratingStepEnd = false;
             btnStep.disabled = false;
             break;
         case TYPE_START: // Received on start
-            setStatus(statusManual, COLOR_OFF);
+            started = true;
+            setStatusColor(statusManual, COLOR_OFF);
             disableManualControl();
             toggleStartStopDisplay();
             disableCalButton();
@@ -333,9 +387,10 @@ function onMessage(evt) {
             disableRadioButtons();
             break;
         case TYPE_STOP: // Received on stop/end of movement
+            started = false;
             toggleStartStopDisplay();
             if (hasManualControl) {
-                setStatus(statusManual, COLOR_ON);
+                setStatusColor(statusManual, COLOR_ON);
                 enableManualControl();
                 enableCalPosButtons();
             }
@@ -391,30 +446,43 @@ function onMessage(evt) {
             console.log("Manual stop down");
             break;
         case TYPE_MANUAL_CONFIRM: // Received on manual confirm
-            if (isProgress(statusUpperLeft)) {
-                setStatus(statusUpperLeft, COLOR_ON);
+            if (calibratingUL) {
+                setStatusColor(statusUpperLeft, COLOR_ON);
+                calibratingUL = false;
                 btnUpperLeft.disabled = false;
-            } else if (isProgress(statusLowerRight)) {
-                setStatus(statusLowerRight, COLOR_ON);
+            } else if (calibratingLR) {
+                setStatusColor(statusLowerRight, COLOR_ON);
+                calibratingLR = false;
                 btnLowerRight.disabled = false;
-            } else if (isProgress(statusUp)) {
-                setStatus(statusUp, COLOR_ON);
+            } else if (calibratingUp) {
+                setStatusColor(statusUp, COLOR_ON);
+                calibratingUp = false;
                 btnUp.disabled = false;
-            } else if (isProgress(statusDown)) {
-                setStatus(statusDown, COLOR_ON);
+            } else if (calibratingDown) {
+                setStatusColor(statusDown, COLOR_ON);
+                calibratingDown = false;
                 btnDown.disabled = false;
-            } else if (isLeftProgress(statusStep)) {
-                setStatus(statusStep, COLOR_RIGHT_PROGRESS);
-            } else if (isRightProgress(statusStep)) {
-                setStatus(statusStep, COLOR_ON);
+            } else if (calibratingStepStart) {
+                setStatusColor(statusStep, COLOR_RIGHT_PROGRESS);
+                calibratingStepStart = false;
+                calibratingStepEnd = true;
+            } else if (calibratingStepEnd) {
+                setStatusColor(statusStep, COLOR_ON);
                 btnStep.disabled = false;
+                calibratingStepEnd = false;
             }
             break;
         case TYPE_LOST_CONTROL: // Received on lost manual control
-            setStatus(statusManual, COLOR_OFF);
+            setStatusColor(statusManual, COLOR_OFF);
             disableManualControl();
             disableCalPosButtons();
             hasManualControl = false;
+            calibratingUL = false;
+            calibratingLR = false;
+            calibratingUp = false;
+            calibratingDown = false;
+            calibratingStepStart = false;
+            calibratingStepEnd = false;
             break;
         default:
             break;
@@ -689,23 +757,7 @@ function assignPageElements() {
     radioTime_10 = document.getElementById("radioTime_10");
 }
 
-function isOn(status) {
-    return status.style.backgroundColor === COLOR_ON;
-}
-
-function isProgress(status) {
-    return status.style.backgroundColor === COLOR_PROGRESS;
-}
-
-function isLeftProgress(status) {
-    return status.style.backgroundColor === COLOR_LEFT_PROGRESS;
-}
-
-function isRightProgress(status) {
-    return status.style.backgroundColor === COLOR_RIGHT_PROGRESS;
-}
-
-function setStatus(statusObj, colorObj) {
+function setStatusColor(statusObj, colorObj) {
     statusObj.style.backgroundColor = colorObj;
 }
 
@@ -714,12 +766,12 @@ function makeMessage(type, data) {
 }
 
 function toggleStartStopDisplay() {
-    if (btnStart.display === "none") {
-        btnStart.display = "inline-block";
-        btnStop.display = "none";
+    if (started) {
+        btnStart.style.display = "none";
+        btnStop.style.display = "inline-block";
     } else {
-        btnStart.display = "none";
-        btnStop.display = "inline-block";
+        btnStart.style.display = "inline-block";
+        btnStop.style.display = "none";
     }
 }
 
@@ -746,14 +798,15 @@ function processInfo(data) {
     enableRadioButtons();
     enableCalButton();
     if (data[1] === "1") {
+        started = true;
         toggleStartStopDisplay();
         disableCalButton();
         disableRadioButtons();
-        setStatus(statusManual, COLOR_OFF);
+        setStatusColor(statusManual, COLOR_OFF);
         disableManualControl();
         hasManualControl = false;
     }
-    if (data[2] === '0' && data[3] === '0' && data[4] === '0' && data[5] === '0' && data[6] === '0') {
+    if (data.substring(2) === "00000") {
         disableCalPosButtons();
     } else {
         infoSetButtons(data[2], data[3], data[4], data[5], data[6]);
@@ -813,23 +866,20 @@ function setRadio(radioChar) {
         case " ":
             break;
         default:
-            console.log("Unknown radio: " + radio);
+            console.log("Unknown radio: " + radioChar);
     }
 }
 
 function infoSetButtons(ul, lr, up, down, step) {
     switch (ul) {
         case "0":
-            setStatus(statusUpperLeft, COLOR_OFF);
-            btnUpperLeft.disabled = false;
+            setStatusColor(statusUpperLeft, COLOR_OFF);
             break;
         case "1":
-            setStatus(statusUpperLeft, COLOR_PROGRESS);
-            btnUpperLeft.disabled = true;
+            setStatusColor(statusUpperLeft, COLOR_PROGRESS);
             break;
         case "D":
-            setStatus(statusUpperLeft, COLOR_ON);
-            btnUpperLeft.disabled = false;
+            setStatusColor(statusUpperLeft, COLOR_ON);
             break;
         default:
             console.log("Unknown upper left: " + ul);
@@ -837,16 +887,13 @@ function infoSetButtons(ul, lr, up, down, step) {
 
     switch (lr) {
         case "0":
-            setStatus(statusLowerRight, COLOR_OFF);
-            btnLowerRight.disabled = false;
+            setStatusColor(statusLowerRight, COLOR_OFF);
             break;
         case "1":
-            setStatus(statusLowerRight, COLOR_PROGRESS);
-            btnLowerRight.disabled = true;
+            setStatusColor(statusLowerRight, COLOR_PROGRESS);
             break;
         case "D":
-            setStatus(statusLowerRight, COLOR_ON);
-            btnLowerRight.disabled = false;
+            setStatusColor(statusLowerRight, COLOR_ON);
             break;
         default:
             console.log("Unknown lower right: " + ul);
@@ -854,16 +901,13 @@ function infoSetButtons(ul, lr, up, down, step) {
 
     switch (up) {
         case "0":
-            setStatus(statusUp, COLOR_OFF);
-            btnUp.disabled = false;
+            setStatusColor(statusUp, COLOR_OFF);
             break;
         case "1":
-            setStatus(statusUp, COLOR_PROGRESS);
-            btnUp.disabled = true;
+            setStatusColor(statusUp, COLOR_PROGRESS);
             break;
         case "D":
-            setStatus(statusUp, COLOR_ON);
-            btnUp.disabled = false;
+            setStatusColor(statusUp, COLOR_ON);
             break;
         default:
             console.log("Unknown up: " + ul);
@@ -871,16 +915,13 @@ function infoSetButtons(ul, lr, up, down, step) {
 
     switch (down) {
         case "0":
-            setStatus(statusDown, COLOR_OFF);
-            btnDown.disabled = false;
+            setStatusColor(statusDown, COLOR_OFF);
             break;
         case "1":
-            setStatus(statusDown, COLOR_PROGRESS);
-            btnDown.disabled = true;
+            setStatusColor(statusDown, COLOR_PROGRESS);
             break;
         case "D":
-            setStatus(statusDown, COLOR_ON);
-            btnDown.disabled = false;
+            setStatusColor(statusDown, COLOR_ON);
             break;
         default:
             console.log("Unknown down: " + ul);
@@ -888,20 +929,16 @@ function infoSetButtons(ul, lr, up, down, step) {
 
     switch (step) {
         case "0":
-            setStatus(statusUpperLeft, COLOR_OFF);
-            btnUpperLeft.disabled = false;
+            setStatusColor(statusStep, COLOR_OFF);
             break;
         case "1":
-            setStatus(statusUpperLeft, COLOR_LEFT_PROGRESS);
-            btnUpperLeft.disabled = true;
+            setStatusColor(statusStep, COLOR_LEFT_PROGRESS);
             break;
         case "2":
-            setStatus(statusUpperLeft, COLOR_RIGHT_PROGRESS);
-            btnUpperLeft.disabled = true;
+            setStatusColor(statusStep, COLOR_RIGHT_PROGRESS);
             break;
         case "D":
-            setStatus(statusUpperLeft, COLOR_ON);
-            btnUpperLeft.disabled = false;
+            setStatusColor(statusStep, COLOR_ON);
             break;
         default:
             console.log("Unknown step: " + ul);

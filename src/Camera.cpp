@@ -1,4 +1,5 @@
 #include "Camera.h"
+#include "Logger.h"
 #include <cmath>
 
 void Camera::setShutterSpeed(GLOBAL::TIME::Period shutterSpeed) {
@@ -6,9 +7,12 @@ void Camera::setShutterSpeed(GLOBAL::TIME::Period shutterSpeed) {
 }
 
 void Camera::takePictureAndWait() {
-  // TODO TAKE PIC AND WAIT FOR PIC TAKEN RESP FROM CAMERA
-  // placeholder
-  delay(ceil(m_shutterSpeed));
+  Logger::debug("Shoot pic");
 
-  delay(MS_WAIT_MARGIN);
+  // TODO TAKE PIC AND WAIT FOR PIC TAKEN RESP FROM CAMERA
+
+  // placeholder
+  delay(ceil(m_shutterSpeed * 3));
+
+  Logger::debug("Shoot pic done");
 }

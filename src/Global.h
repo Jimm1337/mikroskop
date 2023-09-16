@@ -47,7 +47,7 @@ enum CHAR : char {
   MANUAL_STOP_DOWN   = 'q',
   MANUAL_CONFIRM     = 'K',
   TIME               = 'y',
-  LOST_CONTROL       = 'L', // SEND ONLY
+  LOST_CONTROL       = ']', // SEND ONLY
   INFO               = 'i', // SEND ONLY
 };
 } // namespace MSG_TYPE

@@ -62,7 +62,7 @@ body {
 
 .checkmark {
     border-radius: 15%;
-    background: linear-gradient(to right, #A82C1C, #A82C1C);
+    background: #A82C1C;
 
     scale: 60%;
 

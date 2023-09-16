@@ -7,8 +7,6 @@
 // TODO: ADD CAMERA WHEN AVAILABLE
 
 class Camera {
-  static constexpr auto MS_WAIT_MARGIN = 3;
-
   GLOBAL::TIME::Period m_shutterSpeed;
 
 public:

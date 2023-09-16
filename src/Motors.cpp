@@ -1,54 +1,26 @@
 #include "Motors.h"
-#include <cstdlib>
 #include "Logger.h"
+#include <cstdlib>
 
-Motors::Motors(WebSocket* webSocket, Camera* camera):
-  m_webSocket(webSocket),
-  m_camera(camera),
-  m_manualClientID(std::nullopt),
-  m_xStepper(
-    STEP_PER_REV,
-    std::get< 0 >(X_PINS),
-    std::get< 1 >(X_PINS),
-    std::get< 2 >(X_PINS),
-    std::get< 3 >(X_PINS)),
-  m_yStepper(
-    STEP_PER_REV,
-    std::get< 0 >(Y_PINS),
-    std::get< 1 >(Y_PINS),
-    std::get< 2 >(Y_PINS),
-    std::get< 3 >(Y_PINS)),
-  m_zStepper(
-    STEP_PER_REV,
-    std::get< 0 >(Z_PINS),
-    std::get< 1 >(Z_PINS),
-    std::get< 2 >(Z_PINS),
-    std::get< 3 >(Z_PINS)),
-  m_xPos(0),
-  m_yPos(0),
-  m_zPos(0),
-  m_xExtremes(std::nullopt, std::nullopt),
-  m_yExtremes(std::nullopt, std::nullopt),
-  m_zExtremes(std::nullopt, std::nullopt),
-  m_step(std::nullopt),
-  m_readyCount(0),
-  m_ready(false),
-  m_shouldStop(false),
-  m_calibratingUL(false),
-  m_calibratingLR(false),
-  m_calibratingUp(false),
-  m_calibratingDown(false),
-  m_calibratingStepStart(false),
-  m_calibratingStepEnd(false),
-  m_manualMovingLeft(false),
-  m_manualMovingRight(false),
-  m_manualMovingUpper(false),
-  m_manualMovingLower(false),
-  m_manualMovingUp(false),
-  m_manualMovingDown(false),
-  m_stepSet(false),
-  m_nextStepLeft(false),
-  m_time(GLOBAL::TIME::CHAR::TIME_1_125) {
+Motors::Motors(WebSocket *webSocket, Camera *camera)
+    : m_webSocket(webSocket), m_camera(camera), m_manualClientID(std::nullopt),
+      m_xStepper(STEP_PER_REV, std::get<0>(X_PINS), std::get<1>(X_PINS),
+                 std::get<2>(X_PINS), std::get<3>(X_PINS)),
+      m_yStepper(STEP_PER_REV, std::get<0>(Y_PINS), std::get<1>(Y_PINS),
+                 std::get<2>(Y_PINS), std::get<3>(Y_PINS)),
+      m_zStepper(STEP_PER_REV, std::get<0>(Z_PINS), std::get<1>(Z_PINS),
+                 std::get<2>(Z_PINS), std::get<3>(Z_PINS)),
+      m_xPos(0), m_yPos(0), m_zPos(0), m_xExtremes(std::nullopt, std::nullopt),
+      m_yExtremes(std::nullopt, std::nullopt),
+      m_zExtremes(std::nullopt, std::nullopt), m_step(std::nullopt),
+      m_readyCount(0), m_ready(false), m_shouldStop(true),
+      m_calibratingUL(false), m_calibratingLR(false), m_calibratingUp(false),
+      m_calibratingDown(false), m_calibratingStepStart(false),
+      m_calibratingStepEnd(false), m_manualMovingLeft(false),
+      m_manualMovingRight(false), m_manualMovingUpper(false),
+      m_manualMovingLower(false), m_manualMovingUp(false),
+      m_manualMovingDown(false), m_stepSet(false), m_nextStepLeft(false),
+      m_time(GLOBAL::TIME::CHAR::TIME_1_125) {
   m_xStepper.setSpeed(SPEED_AUTO_RPM);
   m_yStepper.setSpeed(SPEED_AUTO_RPM);
   m_zStepper.setSpeed(SPEED_AUTO_RPM);
@@ -56,126 +28,126 @@ Motors::Motors(WebSocket* webSocket, Camera* camera):
   using namespace GLOBAL::MSG_TYPE;
   using namespace GLOBAL::HANDLER;
 
-  m_webSocket->attachListener(
-    START, [this](AsyncWebSocketClient* client, String msg) {
-      startHandler(client, msg);
-    });
-  m_webSocket->attachListener(
-    STOP, [this](AsyncWebSocketClient* client, String msg) {
-      stopHandler(client, msg);
-    });
-  m_webSocket->attachListener(
-    CAL_START, [this](AsyncWebSocketClient* client, String msg) {
-      calStartHandler(client, msg);
-    });
-  m_webSocket->attachListener(
-    CAL_UL, [this](AsyncWebSocketClient* client, String msg) {
-      calULHandler(client, msg);
-    });
-  m_webSocket->attachListener(
-    CAL_LR, [this](AsyncWebSocketClient* client, String msg) {
-      calLRHandler(client, msg);
-    });
-  m_webSocket->attachListener(
-    CAL_UP, [this](AsyncWebSocketClient* client, String msg) {
-      calUpHandler(client, msg);
-    });
-  m_webSocket->attachListener(
-    CAL_DOWN, [this](AsyncWebSocketClient* client, String msg) {
-      calDownHandler(client, msg);
-    });
-  m_webSocket->attachListener(
-    CAL_STEP, [this](AsyncWebSocketClient* client, String msg) {
-      calStepHandler(client, msg);
-    });
-  m_webSocket->attachListener(
-    CAL_RESET_UL, [this](AsyncWebSocketClient* client, String msg) {
-      calResetULHandler(client, msg);
-    });
-  m_webSocket->attachListener(
-    CAL_RESET_LR, [this](AsyncWebSocketClient* client, String msg) {
-      calResetLRHandler(client, msg);
-    });
-  m_webSocket->attachListener(
-    CAL_RESET_U, [this](AsyncWebSocketClient* client, String msg) {
-      calResetUpHandler(client, msg);
-    });
-  m_webSocket->attachListener(
-    CAL_RESET_D, [this](AsyncWebSocketClient* client, String msg) {
-      calResetDownHandler(client, msg);
-    });
-  m_webSocket->attachListener(
-    CAL_RESET_STEP, [this](AsyncWebSocketClient* client, String msg) {
-      calResetStepHandler(client, msg);
-    });
-  m_webSocket->attachListener(
-    MANUAL_START_LEFT, [this](AsyncWebSocketClient* client, String msg) {
-      mStartLeftHandler(client, msg);
-    });
-  m_webSocket->attachListener(
-    MANUAL_START_RIGHT, [this](AsyncWebSocketClient* client, String msg) {
-      mStartRightHandler(client, msg);
-    });
-  m_webSocket->attachListener(
-    MANUAL_START_UPPER, [this](AsyncWebSocketClient* client, String msg) {
-      mStartUpperHandler(client, msg);
-    });
-  m_webSocket->attachListener(
-    MANUAL_START_LOWER, [this](AsyncWebSocketClient* client, String msg) {
-      mStartLowerHandler(client, msg);
-    });
-  m_webSocket->attachListener(
-    MANUAL_START_UP, [this](AsyncWebSocketClient* client, String msg) {
-      mStartUpHandler(client, msg);
-    });
-  m_webSocket->attachListener(
-    MANUAL_START_DOWN, [this](AsyncWebSocketClient* client, String msg) {
-      mStartDownHandler(client, msg);
-    });
-  m_webSocket->attachListener(
-    MANUAL_STOP_LEFT, [this](AsyncWebSocketClient* client, String msg) {
-      mStopLeftHandler(client, msg);
-    });
-  m_webSocket->attachListener(
-    MANUAL_STOP_RIGHT, [this](AsyncWebSocketClient* client, String msg) {
-      mStopRightHandler(client, msg);
-    });
-  m_webSocket->attachListener(
-    MANUAL_STOP_UPPER, [this](AsyncWebSocketClient* client, String msg) {
-      mStopUpperHandler(client, msg);
-    });
-  m_webSocket->attachListener(
-    MANUAL_STOP_LOWER, [this](AsyncWebSocketClient* client, String msg) {
-      mStopLowerHandler(client, msg);
-    });
-  m_webSocket->attachListener(
-    MANUAL_STOP_UP, [this](AsyncWebSocketClient* client, String msg) {
-      mStopUpHandler(client, msg);
-    });
-  m_webSocket->attachListener(
-    MANUAL_STOP_DOWN, [this](AsyncWebSocketClient* client, String msg) {
-      mStopDownHandler(client, msg);
-    });
-  m_webSocket->attachListener(
-    MANUAL_CONFIRM, [this](AsyncWebSocketClient* client, String msg) {
-      mConfirmHandler(client, msg);
-    });
-  m_webSocket->attachListener(
-    INFO, [this](AsyncWebSocketClient* client, String msg) {
-      infoHandler(client, msg);
-    });
-  m_webSocket->attachListener(
-    TIME, [this](AsyncWebSocketClient* client, String msg) {
-      timeHandler(client, msg);
-    });
-  m_webSocket->attachListener(
-    DISCONNECT, [this](AsyncWebSocketClient* client, String msg) {
-      disconnectHandler(client, msg);
-    });
-  m_webSocket->attachListener(
-    CONNECT, [this](AsyncWebSocketClient* client, String msg) {
-      connectHandler(client, msg);
-    });
+  m_webSocket->attachListener(START,
+                              [this](AsyncWebSocketClient *client, String msg) {
+                                startHandler(client, msg);
+                              });
+  m_webSocket->attachListener(STOP,
+                              [this](AsyncWebSocketClient *client, String msg) {
+                                stopHandler(client, msg);
+                              });
+  m_webSocket->attachListener(CAL_START,
+                              [this](AsyncWebSocketClient *client, String msg) {
+                                calStartHandler(client, msg);
+                              });
+  m_webSocket->attachListener(CAL_UL,
+                              [this](AsyncWebSocketClient *client, String msg) {
+                                calULHandler(client, msg);
+                              });
+  m_webSocket->attachListener(CAL_LR,
+                              [this](AsyncWebSocketClient *client, String msg) {
+                                calLRHandler(client, msg);
+                              });
+  m_webSocket->attachListener(CAL_UP,
+                              [this](AsyncWebSocketClient *client, String msg) {
+                                calUpHandler(client, msg);
+                              });
+  m_webSocket->attachListener(CAL_DOWN,
+                              [this](AsyncWebSocketClient *client, String msg) {
+                                calDownHandler(client, msg);
+                              });
+  m_webSocket->attachListener(CAL_STEP,
+                              [this](AsyncWebSocketClient *client, String msg) {
+                                calStepHandler(client, msg);
+                              });
+  m_webSocket->attachListener(CAL_RESET_UL,
+                              [this](AsyncWebSocketClient *client, String msg) {
+                                calResetULHandler(client, msg);
+                              });
+  m_webSocket->attachListener(CAL_RESET_LR,
+                              [this](AsyncWebSocketClient *client, String msg) {
+                                calResetLRHandler(client, msg);
+                              });
+  m_webSocket->attachListener(CAL_RESET_U,
+                              [this](AsyncWebSocketClient *client, String msg) {
+                                calResetUpHandler(client, msg);
+                              });
+  m_webSocket->attachListener(CAL_RESET_D,
+                              [this](AsyncWebSocketClient *client, String msg) {
+                                calResetDownHandler(client, msg);
+                              });
+  m_webSocket->attachListener(CAL_RESET_STEP,
+                              [this](AsyncWebSocketClient *client, String msg) {
+                                calResetStepHandler(client, msg);
+                              });
+  m_webSocket->attachListener(MANUAL_START_LEFT,
+                              [this](AsyncWebSocketClient *client, String msg) {
+                                mStartLeftHandler(client, msg);
+                              });
+  m_webSocket->attachListener(MANUAL_START_RIGHT,
+                              [this](AsyncWebSocketClient *client, String msg) {
+                                mStartRightHandler(client, msg);
+                              });
+  m_webSocket->attachListener(MANUAL_START_UPPER,
+                              [this](AsyncWebSocketClient *client, String msg) {
+                                mStartUpperHandler(client, msg);
+                              });
+  m_webSocket->attachListener(MANUAL_START_LOWER,
+                              [this](AsyncWebSocketClient *client, String msg) {
+                                mStartLowerHandler(client, msg);
+                              });
+  m_webSocket->attachListener(MANUAL_START_UP,
+                              [this](AsyncWebSocketClient *client, String msg) {
+                                mStartUpHandler(client, msg);
+                              });
+  m_webSocket->attachListener(MANUAL_START_DOWN,
+                              [this](AsyncWebSocketClient *client, String msg) {
+                                mStartDownHandler(client, msg);
+                              });
+  m_webSocket->attachListener(MANUAL_STOP_LEFT,
+                              [this](AsyncWebSocketClient *client, String msg) {
+                                mStopLeftHandler(client, msg);
+                              });
+  m_webSocket->attachListener(MANUAL_STOP_RIGHT,
+                              [this](AsyncWebSocketClient *client, String msg) {
+                                mStopRightHandler(client, msg);
+                              });
+  m_webSocket->attachListener(MANUAL_STOP_UPPER,
+                              [this](AsyncWebSocketClient *client, String msg) {
+                                mStopUpperHandler(client, msg);
+                              });
+  m_webSocket->attachListener(MANUAL_STOP_LOWER,
+                              [this](AsyncWebSocketClient *client, String msg) {
+                                mStopLowerHandler(client, msg);
+                              });
+  m_webSocket->attachListener(MANUAL_STOP_UP,
+                              [this](AsyncWebSocketClient *client, String msg) {
+                                mStopUpHandler(client, msg);
+                              });
+  m_webSocket->attachListener(MANUAL_STOP_DOWN,
+                              [this](AsyncWebSocketClient *client, String msg) {
+                                mStopDownHandler(client, msg);
+                              });
+  m_webSocket->attachListener(MANUAL_CONFIRM,
+                              [this](AsyncWebSocketClient *client, String msg) {
+                                mConfirmHandler(client, msg);
+                              });
+  m_webSocket->attachListener(INFO,
+                              [this](AsyncWebSocketClient *client, String msg) {
+                                infoHandler(client, msg);
+                              });
+  m_webSocket->attachListener(TIME,
+                              [this](AsyncWebSocketClient *client, String msg) {
+                                timeHandler(client, msg);
+                              });
+  m_webSocket->attachListener(DISCONNECT,
+                              [this](AsyncWebSocketClient *client, String msg) {
+                                disconnectHandler(client, msg);
+                              });
+  m_webSocket->attachListener(CONNECT,
+                              [this](AsyncWebSocketClient *client, String msg) {
+                                connectHandler(client, msg);
+                              });
 
   m_camera->setShutterSpeed(DEFAULT_SHUTTER_SPEED);
 }
@@ -185,8 +157,7 @@ Motors::Motors(WebSocket* webSocket, Camera* camera):
 ////////////////////////////////////////////////////////////////////////////////
 
 void Motors::executeManualLeft() {
-  while (m_manualMovingLeft.load())
-  {
+  while (m_manualMovingLeft.load()) {
     m_xStepper.step(-1);
     m_xPos--;
     delay(SPEED_MANUAL_MS);
@@ -194,8 +165,7 @@ void Motors::executeManualLeft() {
 }
 
 void Motors::executeManualRight() {
-  while (m_manualMovingRight.load())
-  {
+  while (m_manualMovingRight.load()) {
     m_xStepper.step(1);
     m_xPos++;
     delay(SPEED_MANUAL_MS);
@@ -203,8 +173,7 @@ void Motors::executeManualRight() {
 }
 
 void Motors::executeManualUpper() {
-  while (m_manualMovingUpper.load())
-  {
+  while (m_manualMovingUpper.load()) {
     m_yStepper.step(-1);
     m_yPos--;
     delay(SPEED_MANUAL_MS);
@@ -212,8 +181,7 @@ void Motors::executeManualUpper() {
 }
 
 void Motors::executeManualLower() {
-  while (m_manualMovingLower.load())
-  {
+  while (m_manualMovingLower.load()) {
     m_yStepper.step(1);
     m_yPos++;
     delay(SPEED_MANUAL_MS);
@@ -221,8 +189,7 @@ void Motors::executeManualLower() {
 }
 
 void Motors::executeManualDown() {
-  while (m_manualMovingDown.load())
-  {
+  while (m_manualMovingDown.load()) {
     m_zStepper.step(-1);
     m_zPos--;
     delay(SPEED_MANUAL_MS);
@@ -230,8 +197,7 @@ void Motors::executeManualDown() {
 }
 
 void Motors::executeManualUp() {
-  while (m_manualMovingUp.load())
-  {
+  while (m_manualMovingUp.load()) {
     m_zStepper.step(1);
     m_zPos++;
     delay(SPEED_MANUAL_MS);
@@ -245,8 +211,7 @@ void Motors::executeManualUp() {
 void Motors::moveTo(int_fast16_t target, Direction direction) {
   auto steps = target;
 
-  switch (direction)
-  {
+  switch (direction) {
   case Direction::X:
     steps -= m_xPos;
     m_xStepper.step(steps);
@@ -273,35 +238,31 @@ bool Motors::nextStep() {
   // -> -> -> |
 
   Direction direction{};
-  int       steps{};
+  int steps{};
 
-  if (m_xPos == m_xExtremes.second.load() && !m_nextStepLeft)
-  {
-    direction      = Direction::Y;
-    steps          = min(*m_step.load(), *m_yExtremes.second.load() - m_yPos);
+  if (m_xPos == m_xExtremes.second.load() && !m_nextStepLeft) {
+    direction = Direction::Y;
+    steps = min(*m_step.load(), *m_yExtremes.second.load() - m_yPos);
     m_nextStepLeft = true;
   } else if (m_xPos == m_xExtremes.first.load() && m_nextStepLeft) {
-    direction      = Direction::Y;
-    steps          = min(*m_step.load(), *m_yExtremes.second.load() - m_yPos);
+    direction = Direction::Y;
+    steps = min(*m_step.load(), *m_yExtremes.second.load() - m_yPos);
     m_nextStepLeft = false;
   } else {
     direction = Direction::X;
-    if (!m_nextStepLeft)
-    {
+    if (!m_nextStepLeft) {
       steps = min(*m_step.load(), *m_xExtremes.second.load() - m_xPos);
     } else {
       steps = max(-*m_step.load(), *m_xExtremes.first.load() - m_xPos);
     }
   }
 
-  if (steps == 0)
-  {
+  if (steps == 0) {
     Logger::info("End of pattern reached");
     return false;
   }
 
-  switch (direction)
-  {
+  switch (direction) {
   case Direction::X:
     moveTo(m_xPos + steps, direction);
     break;
@@ -316,32 +277,36 @@ bool Motors::nextStep() {
 }
 
 bool Motors::nextHeight() {
-  if (m_zPos == *m_zExtremes.second.load()) { return false; }
+  if (m_zPos == *m_zExtremes.second.load()) {
+    return false;
+  }
   moveTo(m_zPos + 1, Direction::Z);
   return true;
 }
 
-void Motors::resetHeight() {
-  moveTo(*m_zExtremes.first.load(), Direction::Z);
-}
+void Motors::resetHeight() { moveTo(*m_zExtremes.first.load(), Direction::Z); }
 
 void Motors::moveTask() {
   // Goto Upper Left Lowest Height
   moveTo(*m_xExtremes.first.load(), Direction::X);
   moveTo(*m_yExtremes.first.load(), Direction::Y);
   moveTo(*m_zExtremes.first.load(), Direction::Z);
+  m_nextStepLeft = false;
 
   // Execute pattern
-  while (!m_shouldStop.load())
-  {
+  while (!m_shouldStop.load()) {
     do {
       m_camera->takePictureAndWait();
     } while (nextHeight());
 
     resetHeight();
 
-    if (!nextStep()) { break; }
+    if (!nextStep()) {
+      break;
+    }
   }
+
+  m_shouldStop = true;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -357,33 +322,32 @@ String Motors::makeInfoString() const {
   info[0] = m_time.asChar;
   m_mutex.unlock();
 
-  info[1] = m_moveTask.isRunning() ? '1' : '0';
+  info[1] = m_moveTask.isRunning() ? '1' : '0'; // todo: not working correctly!
 
   info[2] = m_xExtremes.first.load() ? 'D' : m_calibratingUL.load() ? '1' : '0';
 
-  info[3] = m_xExtremes.second.load() ? 'D' :
-            m_calibratingLR.load()    ? '1' :
-                                        '0';
+  info[3] = m_xExtremes.second.load() ? 'D'
+            : m_calibratingLR.load()  ? '1'
+                                      : '0';
 
-  info[4] = m_zExtremes.second.load() ? 'D' :
-            m_calibratingUp.load()    ? '1' :
-                                        '0';
+  info[4] = m_zExtremes.second.load() ? 'D'
+            : m_calibratingUp.load()  ? '1'
+                                      : '0';
 
-  info[5] = m_zExtremes.first.load() ? 'D' :
-            m_calibratingDown.load() ? '1' :
-                                       '0';
+  info[5] = m_zExtremes.first.load()   ? 'D'
+            : m_calibratingDown.load() ? '1'
+                                       : '0';
 
-  info[6] = m_stepSet.load()              ? 'D' :
-            m_calibratingStepStart.load() ? '1' :
-            m_calibratingStepEnd.load()   ? '2' :
-                                            '0';
+  info[6] = m_stepSet.load()                ? 'D'
+            : m_calibratingStepStart.load() ? '1'
+            : m_calibratingStepEnd.load()   ? '2'
+                                            : '0';
 
   return String(static_cast<char>(GLOBAL::MSG_TYPE::INFO)) + info;
 }
 
-bool Motors::verifyManualClient(AsyncWebSocketClient* client) const {
-  if (m_manualClientID.load() != client->id())
-  {
+bool Motors::verifyManualClient(AsyncWebSocketClient *client) const {
+  if (m_manualClientID.load() != client->id()) {
     Logger::warn("Client ID mismatch");
     return false;
   }
@@ -392,34 +356,33 @@ bool Motors::verifyManualClient(AsyncWebSocketClient* client) const {
 }
 
 void Motors::checkReady() {
-  if (m_readyCount == READY_COUNT)
-  {
+  Logger::debug(String("Ready counter: ") + m_readyCount);
+
+  if (m_readyCount == READY_COUNT) {
     m_ready = true;
-    m_webSocket->send(String(static_cast< char >(GLOBAL::MSG_TYPE::READY)));
+    m_webSocket->send(String(static_cast<char>(GLOBAL::MSG_TYPE::READY)));
   }
 }
 
 void Motors::checkNotReady() {
-  if (m_ready.load())
-  {
+  Logger::debug(String("Ready counter: ") + m_readyCount);
+
+  if (m_ready.load()) {
     m_ready = false;
-    m_webSocket->send(String(static_cast< char >(GLOBAL::MSG_TYPE::NOT_READY)));
+    m_webSocket->send(String(static_cast<char>(GLOBAL::MSG_TYPE::NOT_READY)));
   }
 }
 
-void Motors::resetValue(std::atomic< std::optional< int_fast16_t > >& value) {
-  if (value.load().has_value())
-  {
+void Motors::resetValue(std::atomic<std::optional<int_fast16_t>> &value) {
+  if (value.load().has_value()) {
     value = std::nullopt;
     --m_readyCount;
   }
 }
 
-void Motors::resetValues(
-  std::atomic< std::optional< int_fast16_t > >& value1,
-  std::atomic< std::optional< int_fast16_t > >& value2) {
-  if (value1.load().has_value() && value2.load().has_value())
-  {
+void Motors::resetValues(std::atomic<std::optional<int_fast16_t>> &value1,
+                         std::atomic<std::optional<int_fast16_t>> &value2) {
+  if (value1.load().has_value() && value2.load().has_value()) {
     value1 = std::nullopt;
     value2 = std::nullopt;
     --m_readyCount;
@@ -429,36 +392,37 @@ void Motors::resetValues(
 void Motors::resetStep() {
   m_step = std::nullopt;
 
-  if (m_stepSet.load())
-  {
+  if (m_stepSet.load()) {
     m_stepSet = false;
     --m_readyCount;
   }
 }
 
-void Motors::setValue(
-  std::atomic< std::optional< int_fast16_t > >& ref, int_fast16_t newValue) {
-  if (!ref.load().has_value()) { ++m_readyCount; }
+void Motors::setValue(std::atomic<std::optional<int_fast16_t>> &ref,
+                      int_fast16_t newValue) {
+  if (!ref.load().has_value()) {
+    ++m_readyCount;
+  }
   ref = newValue;
 }
 
-void Motors::setValues(
-  std::atomic< std::optional< int_fast16_t > >& ref1,
-  std::atomic< std::optional< int_fast16_t > >& ref2,
-  int_fast16_t                                  newValue1,
-  int_fast16_t                                  newValue2) {
-  if (!ref1.load().has_value() && !ref2.load().has_value()) { ++m_readyCount; }
+void Motors::setValues(std::atomic<std::optional<int_fast16_t>> &ref1,
+                       std::atomic<std::optional<int_fast16_t>> &ref2,
+                       int_fast16_t newValue1, int_fast16_t newValue2) {
+  if (!ref1.load().has_value() && !ref2.load().has_value()) {
+    ++m_readyCount;
+  }
   ref1 = newValue1;
   ref2 = newValue2;
 }
 
 void Motors::setStep(int_fast16_t newValue) {
-  if (m_calibratingStepStart)
-  {
-    m_step = newValue;
-  } else if (m_calibratingStepEnd) {
-    m_step    = abs(newValue - *m_step.load());
+  if (m_step.load().has_value()) {
+    m_step = abs(newValue - *m_step.load());
     m_stepSet = true;
+    ++m_readyCount;
+  } else {
+    m_step = newValue;
   }
 }
 
@@ -466,46 +430,47 @@ void Motors::setStep(int_fast16_t newValue) {
 // Handlers ////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-void Motors::startHandler(AsyncWebSocketClient* client, const String& msg) {
+void Motors::startHandler(AsyncWebSocketClient *client, const String &msg) {
   Logger::debug("Start request received");
 
-  m_moveTask = TrackedTask(true, [this]() {
+  m_shouldStop = false;
+
+  m_webSocket->send(String(static_cast<char>(GLOBAL::MSG_TYPE::START)));
+
+  m_moveTask = TrackedTask(false, [this]() {
     Logger::info("Move task started");
     moveTask();
     Logger::info("Move task ended");
-    m_webSocket->send(String(static_cast< char >(GLOBAL::MSG_TYPE::STOP)));
+    m_webSocket->send(String(static_cast<char>(GLOBAL::MSG_TYPE::STOP)));
   });
-
-  m_webSocket->send(String(static_cast< char >(GLOBAL::MSG_TYPE::START)));
 }
 
-void Motors::stopHandler(AsyncWebSocketClient* client, const String& msg) {
+void Motors::stopHandler(AsyncWebSocketClient *client, const String &msg) {
   Logger::debug("Stop request received");
 
   m_shouldStop = true;
   m_moveTask.safeJoin();
-  m_shouldStop = false;
 }
 
-void Motors::calStartHandler(
-  AsyncWebSocketClient* client, const String& /*msg*/) {
+void Motors::calStartHandler(AsyncWebSocketClient *client,
+                             const String & /*msg*/) {
   Logger::debug("Calibration start request received");
 
-  if (m_moveTask.isRunning())
-  {
+  if (m_moveTask.isRunning()) {
     Logger::warn("Already moving");
     return;
   }
 
-  m_manualMovingLeft  = false;
+  m_manualMovingLeft = false;
   m_manualMovingRight = false;
   m_manualMovingUpper = false;
   m_manualMovingLower = false;
-  m_manualMovingUp    = false;
-  m_manualMovingDown  = false;
+  m_manualMovingUp = false;
+  m_manualMovingDown = false;
 
-  if (m_manualClientID.load().has_value())
-  { m_webSocket->sendLostControl(client); }
+  if (m_manualClientID.load().has_value()) {
+    WebSocket::sendLostControl(client);
+  }
   m_manualClientID = client->id();
 
   resetValues(m_xExtremes.first, m_yExtremes.first);
@@ -523,115 +488,131 @@ void Motors::calStartHandler(
 
   checkNotReady();
 
-  m_webSocket->send(String(static_cast< char >(GLOBAL::MSG_TYPE::CAL_START)));
+  m_webSocket->send(String(static_cast<char>(GLOBAL::MSG_TYPE::CAL_START)));
 }
 
-void Motors::calULHandler(AsyncWebSocketClient* client, const String& /*msg*/) {
+void Motors::calULHandler(AsyncWebSocketClient *client,
+                          const String & /*msg*/) {
   Logger::debug("Calibration UL request received");
 
-  if (!verifyManualClient(client)) { return; }
+  if (!verifyManualClient(client)) {
+    return;
+  }
 
   resetValues(m_xExtremes.first, m_yExtremes.first);
 
-  m_calibratingUp        = false;
-  m_calibratingDown      = false;
-  m_calibratingLR        = false;
-  m_calibratingStepEnd   = false;
+  m_calibratingUp = false;
+  m_calibratingDown = false;
+  m_calibratingLR = false;
+  m_calibratingStepEnd = false;
   m_calibratingStepStart = false;
 
   m_calibratingUL = true;
 
   checkNotReady();
 
-  m_webSocket->send(String(static_cast< char >(GLOBAL::MSG_TYPE::CAL_UL)));
+  m_webSocket->send(String(static_cast<char>(GLOBAL::MSG_TYPE::CAL_UL)));
 }
 
-void Motors::calLRHandler(AsyncWebSocketClient* client, const String& /*msg*/) {
+void Motors::calLRHandler(AsyncWebSocketClient *client,
+                          const String & /*msg*/) {
   Logger::debug("Calibration LR request received");
 
-  if (!verifyManualClient(client)) { return; }
+  if (!verifyManualClient(client)) {
+    return;
+  }
 
   resetValues(m_xExtremes.second, m_yExtremes.second);
 
-  m_calibratingUp        = false;
-  m_calibratingDown      = false;
-  m_calibratingUL        = false;
-  m_calibratingStepEnd   = false;
+  m_calibratingUp = false;
+  m_calibratingDown = false;
+  m_calibratingUL = false;
+  m_calibratingStepEnd = false;
   m_calibratingStepStart = false;
 
   m_calibratingLR = true;
 
   checkNotReady();
 
-  m_webSocket->send(String(static_cast< char >(GLOBAL::MSG_TYPE::CAL_LR)));
+  m_webSocket->send(String(static_cast<char>(GLOBAL::MSG_TYPE::CAL_LR)));
 }
 
-void Motors::calUpHandler(AsyncWebSocketClient* client, const String& /*msg*/) {
+void Motors::calUpHandler(AsyncWebSocketClient *client,
+                          const String & /*msg*/) {
   Logger::debug("Calibration Up request received");
 
-  if (!verifyManualClient(client)) { return; }
+  if (!verifyManualClient(client)) {
+    return;
+  }
 
-  resetValue(m_zExtremes.first);
+  resetValue(m_zExtremes.second);
 
-  m_calibratingDown      = false;
-  m_calibratingUL        = false;
-  m_calibratingLR        = false;
-  m_calibratingStepEnd   = false;
+  m_calibratingDown = false;
+  m_calibratingUL = false;
+  m_calibratingLR = false;
+  m_calibratingStepEnd = false;
   m_calibratingStepStart = false;
 
   m_calibratingUp = true;
 
   checkNotReady();
 
-  m_webSocket->send(String(static_cast< char >(GLOBAL::MSG_TYPE::CAL_UP)));
+  m_webSocket->send(String(static_cast<char>(GLOBAL::MSG_TYPE::CAL_UP)));
 }
 
-void Motors::calDownHandler(
-  AsyncWebSocketClient* client, const String& /*msg*/) {
+void Motors::calDownHandler(AsyncWebSocketClient *client,
+                            const String & /*msg*/) {
   Logger::debug("Calibration Down request received");
 
-  if (!verifyManualClient(client)) { return; }
+  if (!verifyManualClient(client)) {
+    return;
+  }
 
-  resetValue(m_zExtremes.second);
+  resetValue(m_zExtremes.first);
 
-  m_calibratingUp        = false;
-  m_calibratingUL        = false;
-  m_calibratingLR        = false;
-  m_calibratingStepEnd   = false;
+  m_calibratingUp = false;
+  m_calibratingUL = false;
+  m_calibratingLR = false;
+  m_calibratingStepEnd = false;
   m_calibratingStepStart = false;
 
   m_calibratingDown = true;
 
   checkNotReady();
 
-  m_webSocket->send(String(static_cast< char >(GLOBAL::MSG_TYPE::CAL_DOWN)));
+  m_webSocket->send(String(static_cast<char>(GLOBAL::MSG_TYPE::CAL_DOWN)));
 }
 
-void Motors::calStepHandler(
-  AsyncWebSocketClient* client, const String& /*msg*/) {
+void Motors::calStepHandler(AsyncWebSocketClient *client,
+                            const String & /*msg*/) {
   Logger::debug("Calibration Step request received");
 
-  if (!verifyManualClient(client)) { return; }
+  if (!verifyManualClient(client)) {
+    return;
+  }
 
   resetStep();
 
-  m_calibratingUp   = false;
+  m_calibratingUp = false;
   m_calibratingDown = false;
-  m_calibratingUL   = false;
-  m_calibratingLR   = false;
+  m_calibratingUL = false;
+  m_calibratingLR = false;
+  m_calibratingStepEnd = false;
 
   m_calibratingStepStart = true;
 
   checkNotReady();
 
-  m_webSocket->send(String(static_cast< char >(GLOBAL::MSG_TYPE::CAL_STEP)));
+  m_webSocket->send(String(static_cast<char>(GLOBAL::MSG_TYPE::CAL_STEP)));
 }
 
-void Motors::calResetULHandler(
-  AsyncWebSocketClient* client, const String& /*msg*/) {
+void Motors::calResetULHandler(AsyncWebSocketClient *client,
+                               const String & /*msg*/) {
   Logger::debug("Calibration Reset UL request received");
 
-  if (!verifyManualClient(client)) { return; }
+  if (!verifyManualClient(client)) {
+    return;
+  }
 
   resetValues(m_xExtremes.first, m_yExtremes.first);
 
@@ -639,15 +620,16 @@ void Motors::calResetULHandler(
 
   checkNotReady();
 
-  m_webSocket->send(
-    String(static_cast< char >(GLOBAL::MSG_TYPE::CAL_RESET_UL)));
+  m_webSocket->send(String(static_cast<char>(GLOBAL::MSG_TYPE::CAL_RESET_UL)));
 }
 
-void Motors::calResetLRHandler(
-  AsyncWebSocketClient* client, const String& /*msg*/) {
+void Motors::calResetLRHandler(AsyncWebSocketClient *client,
+                               const String & /*msg*/) {
   Logger::debug("Calibration Reset LR request received");
 
-  if (!verifyManualClient(client)) { return; }
+  if (!verifyManualClient(client)) {
+    return;
+  }
 
   resetValues(m_xExtremes.second, m_yExtremes.second);
 
@@ -655,240 +637,297 @@ void Motors::calResetLRHandler(
 
   checkNotReady();
 
-  m_webSocket->send(
-    String(static_cast< char >(GLOBAL::MSG_TYPE::CAL_RESET_LR)));
+  m_webSocket->send(String(static_cast<char>(GLOBAL::MSG_TYPE::CAL_RESET_LR)));
 }
 
-void Motors::calResetUpHandler(
-  AsyncWebSocketClient* client, const String& /*msg*/) {
+void Motors::calResetUpHandler(AsyncWebSocketClient *client,
+                               const String & /*msg*/) {
   Logger::debug("Calibration Reset Up request received");
 
-  if (!verifyManualClient(client)) { return; }
+  if (!verifyManualClient(client)) {
+    return;
+  }
 
-  resetValue(m_zExtremes.first);
+  resetValue(m_zExtremes.second);
 
   m_calibratingUp = false;
 
   checkNotReady();
 
-  m_webSocket->send(String(static_cast< char >(GLOBAL::MSG_TYPE::CAL_RESET_U)));
+  m_webSocket->send(String(static_cast<char>(GLOBAL::MSG_TYPE::CAL_RESET_U)));
 }
 
-void Motors::calResetDownHandler(
-  AsyncWebSocketClient* client, const String& /*msg*/) {
+void Motors::calResetDownHandler(AsyncWebSocketClient *client,
+                                 const String & /*msg*/) {
   Logger::debug("Calibration Reset Down request received");
 
-  if (!verifyManualClient(client)) { return; }
+  if (!verifyManualClient(client)) {
+    return;
+  }
 
-  resetValue(m_zExtremes.second);
+  resetValue(m_zExtremes.first);
 
   m_calibratingDown = false;
 
   checkNotReady();
 
-  m_webSocket->send(String(static_cast< char >(GLOBAL::MSG_TYPE::CAL_RESET_D)));
+  m_webSocket->send(String(static_cast<char>(GLOBAL::MSG_TYPE::CAL_RESET_D)));
 }
 
-void Motors::calResetStepHandler(
-  AsyncWebSocketClient* client, const String& /*msg*/) {
+void Motors::calResetStepHandler(AsyncWebSocketClient *client,
+                                 const String & /*msg*/) {
   Logger::debug("Calibration Reset Step request received");
 
-  if (!verifyManualClient(client)) { return; }
+  if (!verifyManualClient(client)) {
+    return;
+  }
 
   resetStep();
 
   m_calibratingStepStart = false;
-  m_calibratingStepEnd   = false;
+  m_calibratingStepEnd = false;
 
   checkNotReady();
 
   m_webSocket->send(
-    String(static_cast< char >(GLOBAL::MSG_TYPE::CAL_RESET_STEP)));
+      String(static_cast<char>(GLOBAL::MSG_TYPE::CAL_RESET_STEP)));
 }
 
-void Motors::mStartLeftHandler(
-  AsyncWebSocketClient* client, const String& /*msg*/) {
+void Motors::mStartLeftHandler(AsyncWebSocketClient *client,
+                               const String & /*msg*/) {
   Logger::debug("Manual Start Left request received");
 
-  if (!verifyManualClient(client)) { return; }
+  if (!verifyManualClient(client)) {
+    return;
+  }
 
   m_manualMovingLeft = true;
-  m_manualLeftTask   = TrackedTask(false, [this]() { executeManualLeft(); });
+  m_manualLeftTask = TrackedTask(false, [this]() { executeManualLeft(); });
 
   m_webSocket->send(
-    String(static_cast< char >(GLOBAL::MSG_TYPE::MANUAL_START_LEFT)));
+      String(static_cast<char>(GLOBAL::MSG_TYPE::MANUAL_START_LEFT)));
 }
 
-void Motors::mStartRightHandler(
-  AsyncWebSocketClient* client, const String& /*msg*/) {
+void Motors::mStartRightHandler(AsyncWebSocketClient *client,
+                                const String & /*msg*/) {
   Logger::debug("Manual Start Right request received");
 
-  if (!verifyManualClient(client)) { return; }
+  if (!verifyManualClient(client)) {
+    return;
+  }
 
   m_manualMovingRight = true;
-  m_manualRightTask   = TrackedTask(false, [this]() { executeManualRight(); });
+  m_manualRightTask = TrackedTask(false, [this]() { executeManualRight(); });
 
   m_webSocket->send(
-    String(static_cast< char >(GLOBAL::MSG_TYPE::MANUAL_START_RIGHT)));
+      String(static_cast<char>(GLOBAL::MSG_TYPE::MANUAL_START_RIGHT)));
 }
 
-void Motors::mStartUpperHandler(
-  AsyncWebSocketClient* client, const String& /*msg*/) {
+void Motors::mStartUpperHandler(AsyncWebSocketClient *client,
+                                const String & /*msg*/) {
   Logger::debug("Manual Start Upper request received");
 
-  if (!verifyManualClient(client)) { return; }
+  if (!verifyManualClient(client)) {
+    return;
+  }
 
   m_manualMovingUpper = true;
-  m_manualUpperTask   = TrackedTask(false, [this]() { executeManualUpper(); });
+  m_manualUpperTask = TrackedTask(false, [this]() { executeManualUpper(); });
 
   m_webSocket->send(
-    String(static_cast< char >(GLOBAL::MSG_TYPE::MANUAL_START_UPPER)));
+      String(static_cast<char>(GLOBAL::MSG_TYPE::MANUAL_START_UPPER)));
 }
 
-void Motors::mStartLowerHandler(
-  AsyncWebSocketClient* client, const String& /*msg*/) {
+void Motors::mStartLowerHandler(AsyncWebSocketClient *client,
+                                const String & /*msg*/) {
   Logger::debug("Manual Start Lower request received");
 
-  if (!verifyManualClient(client)) { return; }
+  if (!verifyManualClient(client)) {
+    return;
+  }
 
   m_manualMovingLower = true;
-  m_manualLowerTask   = TrackedTask(false, [this]() { executeManualLower(); });
+  m_manualLowerTask = TrackedTask(false, [this]() { executeManualLower(); });
 
   m_webSocket->send(
-    String(static_cast< char >(GLOBAL::MSG_TYPE::MANUAL_START_LOWER)));
+      String(static_cast<char>(GLOBAL::MSG_TYPE::MANUAL_START_LOWER)));
 }
 
-void Motors::mStartUpHandler(
-  AsyncWebSocketClient* client, const String& /*msg*/) {
+void Motors::mStartUpHandler(AsyncWebSocketClient *client,
+                             const String & /*msg*/) {
   Logger::debug("Manual Start Up request received");
 
-  if (!verifyManualClient(client)) { return; }
+  if (!verifyManualClient(client)) {
+    return;
+  }
 
   m_manualMovingUp = true;
-  m_manualUpTask   = TrackedTask(false, [this]() { executeManualUp(); });
+  m_manualUpTask = TrackedTask(false, [this]() { executeManualUp(); });
 
   m_webSocket->send(
-    String(static_cast< char >(GLOBAL::MSG_TYPE::MANUAL_START_UP)));
+      String(static_cast<char>(GLOBAL::MSG_TYPE::MANUAL_START_UP)));
 }
 
-void Motors::mStartDownHandler(
-  AsyncWebSocketClient* client, const String& /*msg*/) {
+void Motors::mStartDownHandler(AsyncWebSocketClient *client,
+                               const String & /*msg*/) {
   Logger::debug("Manual Start Down request received");
 
-  if (!verifyManualClient(client)) { return; }
+  if (!verifyManualClient(client)) {
+    return;
+  }
 
   m_manualMovingDown = true;
-  m_manualDownTask   = TrackedTask(false, [this]() { executeManualDown(); });
+  m_manualDownTask = TrackedTask(false, [this]() { executeManualDown(); });
 
   m_webSocket->send(
-    String(static_cast< char >(GLOBAL::MSG_TYPE::MANUAL_START_DOWN)));
+      String(static_cast<char>(GLOBAL::MSG_TYPE::MANUAL_START_DOWN)));
 }
 
-void Motors::mStopLeftHandler(
-  AsyncWebSocketClient* client, const String& /*msg*/) {
+void Motors::mStopLeftHandler(AsyncWebSocketClient *client,
+                              const String & /*msg*/) {
   Logger::debug("Manual Stop Left request received");
 
-  if (!verifyManualClient(client)) { return; }
+  if (!verifyManualClient(client)) {
+    return;
+  }
 
   m_manualMovingLeft = false;
   m_manualLeftTask.safeJoin();
 
+  Logger::debug("Manual Stop Left request received");
+  Logger::debug(String("X: ") + m_xPos);
+
   m_webSocket->send(
-    String(static_cast< char >(GLOBAL::MSG_TYPE::MANUAL_STOP_LEFT)));
+      String(static_cast<char>(GLOBAL::MSG_TYPE::MANUAL_STOP_LEFT)));
 }
 
-void Motors::mStopRightHandler(
-  AsyncWebSocketClient* client, const String& /*msg*/) {
+void Motors::mStopRightHandler(AsyncWebSocketClient *client,
+                               const String & /*msg*/) {
   Logger::debug("Manual Stop Right request received");
 
-  if (!verifyManualClient(client)) { return; }
+  if (!verifyManualClient(client)) {
+    return;
+  }
 
   m_manualMovingRight = false;
   m_manualRightTask.safeJoin();
 
+  Logger::debug("Manual Stop Right request received");
+  Logger::debug(String("X: ") + m_xPos);
+
   m_webSocket->send(
-    String(static_cast< char >(GLOBAL::MSG_TYPE::MANUAL_STOP_RIGHT)));
+      String(static_cast<char>(GLOBAL::MSG_TYPE::MANUAL_STOP_RIGHT)));
 }
 
-void Motors::mStopUpperHandler(
-  AsyncWebSocketClient* client, const String& /*msg*/) {
+void Motors::mStopUpperHandler(AsyncWebSocketClient *client,
+                               const String & /*msg*/) {
   Logger::debug("Manual Stop Upper request received");
 
-  if (!verifyManualClient(client)) { return; }
+  if (!verifyManualClient(client)) {
+    return;
+  }
 
   m_manualMovingUpper = false;
   m_manualUpperTask.safeJoin();
 
+  Logger::debug("Manual Stop Upper request received");
+  Logger::debug(String("Y: ") + m_yPos);
+
   m_webSocket->send(
-    String(static_cast< char >(GLOBAL::MSG_TYPE::MANUAL_STOP_UPPER)));
+      String(static_cast<char>(GLOBAL::MSG_TYPE::MANUAL_STOP_UPPER)));
 }
 
-void Motors::mStopLowerHandler(
-  AsyncWebSocketClient* client, const String& /*msg*/) {
+void Motors::mStopLowerHandler(AsyncWebSocketClient *client,
+                               const String & /*msg*/) {
   Logger::debug("Manual Stop Lower request received");
 
-  if (!verifyManualClient(client)) { return; }
+  if (!verifyManualClient(client)) {
+    return;
+  }
 
   m_manualMovingLower = false;
   m_manualLowerTask.safeJoin();
 
+  Logger::debug("Manual Stop Lower request received");
+  Logger::debug(String("Y: ") + m_yPos);
+
   m_webSocket->send(
-    String(static_cast< char >(GLOBAL::MSG_TYPE::MANUAL_STOP_LOWER)));
+      String(static_cast<char>(GLOBAL::MSG_TYPE::MANUAL_STOP_LOWER)));
 }
 
-void Motors::mStopUpHandler(
-  AsyncWebSocketClient* client, const String& /*msg*/) {
+void Motors::mStopUpHandler(AsyncWebSocketClient *client,
+                            const String & /*msg*/) {
   Logger::debug("Manual Stop Up request received");
 
-  if (!verifyManualClient(client)) { return; }
+  if (!verifyManualClient(client)) {
+    return;
+  }
 
   m_manualMovingUp = false;
   m_manualUpTask.safeJoin();
 
+  Logger::debug("Manual Stop Up request received");
+  Logger::debug(String("Z: ") + m_zPos);
+
   m_webSocket->send(
-    String(static_cast< char >(GLOBAL::MSG_TYPE::MANUAL_STOP_UP)));
+      String(static_cast<char>(GLOBAL::MSG_TYPE::MANUAL_STOP_UP)));
 }
 
-void Motors::mStopDownHandler(
-  AsyncWebSocketClient* client, const String& /*msg*/) {
+void Motors::mStopDownHandler(AsyncWebSocketClient *client,
+                              const String & /*msg*/) {
   Logger::debug("Manual Stop Down request received");
 
-  if (!verifyManualClient(client)) { return; }
+  if (!verifyManualClient(client)) {
+    return;
+  }
 
   m_manualMovingDown = false;
   m_manualDownTask.safeJoin();
 
+  Logger::debug("Manual Stop Down request received");
+  Logger::debug(String("Z: ") + m_zPos);
+
   m_webSocket->send(
-    String(static_cast< char >(GLOBAL::MSG_TYPE::MANUAL_STOP_DOWN)));
+      String(static_cast<char>(GLOBAL::MSG_TYPE::MANUAL_STOP_DOWN)));
 }
 
-void Motors::mConfirmHandler(
-  AsyncWebSocketClient* client, const String& /*msg*/) {
+void Motors::mConfirmHandler(AsyncWebSocketClient *client,
+                             const String & /*msg*/) {
   Logger::debug("Manual Confirm request received");
 
-  if (!verifyManualClient(client)) { return; }
+  if (!verifyManualClient(client)) {
+    return;
+  }
 
-  if (m_calibratingUL.load())
-  {
+  if (m_calibratingUL.load()) {
     setValues(m_xExtremes.first, m_yExtremes.first, m_xPos, m_yPos);
     m_calibratingUL = false;
+    Logger::debug(String("Upper Left: X = ") + *m_xExtremes.first.load() +
+                  ", Y = " + *m_yExtremes.first.load());
   } else if (m_calibratingLR.load()) {
     setValues(m_xExtremes.second, m_yExtremes.second, m_xPos, m_yPos);
     m_calibratingLR = false;
+    Logger::debug(String("Lower Right: X = ") + *m_xExtremes.second.load() +
+                  ", Y = " + *m_yExtremes.second.load());
   } else if (m_calibratingUp.load()) {
     setValue(m_zExtremes.second, m_zPos);
     m_calibratingUp = false;
+    Logger::debug(String("Up: Z = ") + *m_zExtremes.second.load());
   } else if (m_calibratingDown.load()) {
     setValue(m_zExtremes.first, m_zPos);
     m_calibratingDown = false;
+    Logger::debug(String("Down: Z = ") + *m_zExtremes.first.load());
   } else if (m_calibratingStepStart.load()) {
     setStep(m_xPos);
     m_calibratingStepStart = false;
-    m_calibratingStepEnd   = true;
+    m_calibratingStepEnd = true;
+    Logger::debug(String("Step start: X = ") + m_xPos.load());
   } else if (m_calibratingStepEnd.load()) {
     setStep(m_xPos);
     m_calibratingStepEnd = false;
-    m_stepSet            = true;
+    m_stepSet = true;
+    Logger::debug(String("Step end: X = ") + m_xPos.load());
+    Logger::debug(String("Step Distance: ") + *m_step.load());
   } else {
     Logger::warn("No manual action");
     return;
@@ -897,48 +936,45 @@ void Motors::mConfirmHandler(
   checkReady();
 
   m_webSocket->send(
-    String(static_cast< char >(GLOBAL::MSG_TYPE::MANUAL_CONFIRM)));
+      String(static_cast<char>(GLOBAL::MSG_TYPE::MANUAL_CONFIRM)));
 }
 
-void Motors::infoHandler(
-  AsyncWebSocketClient* /*client*/, const String& /*msg*/) {
+void Motors::infoHandler(AsyncWebSocketClient * /*client*/,
+                         const String & /*msg*/) {
   Logger::debug("Info request received");
 
   m_webSocket->send(makeInfoString());
 }
 
-void Motors::timeHandler(AsyncWebSocketClient* /*client*/, const String& msg) {
+void Motors::timeHandler(AsyncWebSocketClient * /*client*/, const String &msg) {
   Logger::debug("Time request received");
 
-  if (m_time.asChar == GLOBAL::TIME::CHAR::EMPTY) { ++m_readyCount; }
-  m_time = GLOBAL::Time(static_cast< GLOBAL::TIME::CHAR >(msg[0]));
+  m_time = GLOBAL::Time(static_cast<GLOBAL::TIME::CHAR>(msg[1]));
   m_camera->setShutterSpeed(m_time.asMs);
-
-  checkReady();
 
   m_webSocket->send(msg);
 }
 
-void Motors::disconnectHandler(
-  AsyncWebSocketClient* client, const String& /*msg*/) {
+void Motors::disconnectHandler(AsyncWebSocketClient *client,
+                               const String & /*msg*/) {
   Logger::debug("Disconnect request received");
 
-  if (client->id() == m_manualClientID.load())
-  {
-    m_manualMovingLeft  = false;
+  if (client->id() == m_manualClientID.load()) {
+    m_manualMovingLeft = false;
     m_manualMovingRight = false;
     m_manualMovingUpper = false;
     m_manualMovingLower = false;
-    m_manualMovingUp    = false;
-    m_manualMovingDown  = false;
-    m_manualClientID    = std::nullopt;
+    m_manualMovingUp = false;
+    m_manualMovingDown = false;
+    m_manualClientID = std::nullopt;
   }
 }
 
-void Motors::connectHandler(
-  AsyncWebSocketClient* /*client*/, const String& /*msg*/) {
+void Motors::connectHandler(AsyncWebSocketClient * /*client*/,
+                            const String & /*msg*/) {
   Logger::debug("Connect request received");
 
-  if (m_ready)
-  { m_webSocket->send(String(static_cast< char >(GLOBAL::MSG_TYPE::READY))); }
+  if (m_ready) {
+    m_webSocket->send(String(static_cast<char>(GLOBAL::MSG_TYPE::READY)));
+  }
 }

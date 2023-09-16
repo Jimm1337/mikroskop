@@ -24,12 +24,12 @@ class Motors {
     std::atomic< std::optional< int_fast16_t > > >;
 
   static constexpr auto       SPEED_MANUAL_MS = 30;
-  static constexpr auto       SPEED_AUTO_RPM  = 120;
+  static constexpr auto       SPEED_AUTO_RPM  = 60;
   static constexpr auto       STEP_PER_REV    = 200;
   static constexpr std::tuple X_PINS{ 32, 33, 25, 26 };
   static constexpr std::tuple Y_PINS{ 27, 14, 12, 13 };
   static constexpr std::tuple Z_PINS{ 21, 19, 18, 5 };
-  static constexpr auto       READY_COUNT = 6;
+  static constexpr auto       READY_COUNT = 5;
   static constexpr auto DEFAULT_SHUTTER_SPEED = GLOBAL::TIME::MS::TIME_1_125;
 
   Stepper                                      m_xStepper; // left/right
