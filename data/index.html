@@ -8,28 +8,119 @@
     <title>Mikroskop</title>
 </head>
 <body>
-<div class="panel">
-    X
-    <label for="xs"></label><input class="input" type="number" id="xs" placeholder="Od" min="0" max="300">
-    <label for="xe"></label><input class="input" type="number" id="xe" placeholder="Do" min="0" max="300">
-    <span class="posSpan" id="xPos">?</span>
-    <br>
-    Y
-    <label for="ys"></label><input class="input" type="number" id="ys" placeholder="Od" min="0" max="300">
-    <label for="ye"></label><input class="input" type="number" id="ye" placeholder="Do" min="0" max="300">
-    <span class="posSpan" id="yPos">?</span>
-    <br>
-    Z
-    <label for="zs"></label><input class="input" type="number" id="zs" placeholder="Od" min="0" max="200">
-    <label for="ze"></label><input class="input" type="number" id="ze" placeholder="Do" min="0" max="200">
-    <span class="posSpan" id="zPos">?</span>
-    <br>
-    Prędkość
-    <label for="s"></label><input class="input" type="number" id="s" placeholder="MSDelay" min="50" max="1000">
-    <br>
-    <button class="btn" id="send" onclick="onPressSend()" disabled>Wyślij</button>
-    <br>
-    <button class="btn btn-stop" id="stop" onclick="onPressStop()" disabled>Stop</button>
+
+<div class="align_row">
+
+    <div class="align_column">
+
+        <div class="panel color_status_border">
+            <div class="status_grid">
+                <label class="status_label" for="statusConnection">Połączenie</label>
+                <div id="statusConnection" class="checkmark"></div>
+                <label class="status_label" for="statusManual">Manualne sterowanie</label>
+                <div id="statusManual" class="checkmark"></div>
+            </div>
+        </div>
+
+        <div class="panel color_calibrate_border">
+            <button disabled id="btnCal" class="button color_calibrate btn_cal" onclick="calStart()">Rozpocznij Kalibrację
+            </button>
+            <div class="cal_grid">
+                <button disabled id="btnUpperLeft" class="button color_pos grid_item btn_pos" onclick="calUpperLeft()">Lewy Górny
+                </button>
+                <div id="statusUpperLeft" class="checkmark grid_item"></div>
+                <button disabled id="btnResetUpperLeft" class="button color_reset grid_item btn_reset" onclick="calResetUL()">
+                    Reset
+                </button>
+
+                <button disabled id="btnLowerRight" class="button color_pos grid_item btn_pos" onclick="calLowerRight()">Prawy
+                    Dolny
+                </button>
+                <div id="statusLowerRight" class="checkmark grid_item"></div>
+                <button disabled id="btnResetLowerRight" class="button color_reset grid_item btn_reset" onclick="calResetLR()">
+                    Reset
+                </button>
+
+                <button disabled id="btnUp" class="button color_pos grid_item btn_pos" onclick="calUp()">Góra</button>
+                <div id="statusUp" class="checkmark grid_item"></div>
+                <button disabled id="btnResetUp" class="button color_reset grid_item btn_reset" onclick="calResetU()">Reset
+                </button>
+
+                <button disabled id="btnDown" class="button color_pos grid_item btn_pos" onclick="calDown()">Dół</button>
+                <div id="statusDown" class="checkmark grid_item"></div>
+                <button disabled id="btnResetDown" class="button color_reset grid_item btn_reset" onclick="calResetD()">Reset
+                </button>
+
+                <button disabled id="btnStep" class="button color_pos grid_item btn_pos" onclick="calStep()">Krok</button>
+                <div id="statusStep" class="checkmark"></div>
+                <button disabled id="btnResetStep" class="button color_reset grid_item btn_reset" onclick="calResetStep()">Reset
+                </button>
+            </div>
+        </div>
+
+        <div class="panel color_control_border">
+            <button disabled id="btnStart" class="button color_start btn_start" onclick="ctrlStart()">Start</button>
+            <button id="btnStop" class="button color_stop btn_stop" onclick="ctrlStop()">Stop</button>
+        </div>
+
+    </div>
+
+    <div class="panel color_time_border">
+        <fieldset>
+            <legend>Czas naświetlania</legend>
+            <div class="time_grid">
+                <input disabled id="radioTime_1_4000" type="radio" name="time_radio_group" class="radio_time grid_item" onchange="changeRT1_4000()">
+                <label for="radioTime_1_4000" class="grid_item">1/4000 sekundy</label>
+
+                <input disabled id="radioTime_1_2000" type="radio" name="time_radio_group" class="radio_time grid_item" onchange="changeRT1_2000()">
+                <label for="radioTime_1_2000" class="grid_item">1/2000 sekundy</label>
+
+                <input disabled id="radioTime_1_1000" type="radio" name="time_radio_group" class="radio_time grid_item" onchange="changeRT1_1000()">
+                <label for="radioTime_1_1000" class="grid_item">1/1000 sekundy</label>
+
+                <input disabled id="radioTime_1_500" type="radio" name="time_radio_group" class="radio_time grid_item" onchange="changeRT1_500()">
+                <label for="radioTime_1_500" class="grid_item">1/500 sekundy</label>
+
+                <input disabled id="radioTime_1_250" type="radio" name="time_radio_group" class="radio_time grid_item" onchange="changeRT1_250()">
+                <label for="radioTime_1_250" class="grid_item">1/250 sekundy</label>
+
+                <input disabled id="radioTime_1_125" type="radio" name="time_radio_group" class="radio_time grid_item" onchange="changeRT1_125()">
+                <label for="radioTime_1_125" class="grid_item">1/125 sekundy</label>
+
+                <input disabled id="radioTime_1_60" type="radio" name="time_radio_group" class="radio_time grid_item" onchange="changeRT1_60()">
+                <label for="radioTime_1_60" class="grid_item">1/60 sekundy</label>
+
+                <input disabled id="radioTime_1_30" type="radio" name="time_radio_group" class="radio_time grid_item" onchange="changeRT1_30()">
+                <label for="radioTime_1_30" class="grid_item">1/30 sekundy</label>
+
+                <input disabled id="radioTime_1_15" type="radio" name="time_radio_group" class="radio_time grid_item" onchange="changeRT1_15()">
+                <label for="radioTime_1_15" class="grid_item">1/15 sekundy</label>
+
+                <input disabled id="radioTime_1_8" type="radio" name="time_radio_group" class="radio_time grid_item" onchange="changeRT1_8()">
+                <label for="radioTime_1_8" class="grid_item">1/8 sekundy</label>
+
+                <input disabled id="radioTime_1_4" type="radio" name="time_radio_group" class="radio_time grid_item" onchange="changeRT1_4()">
+                <label for="radioTime_1_4" class="grid_item">1/4 sekundy</label>
+
+                <input disabled id="radioTime_1_2" type="radio" name="time_radio_group" class="radio_time grid_item" onchange="changeRT1_2()">
+                <label for="radioTime_1_2" class="grid_item">1/2 sekundy</label>
+
+                <input disabled id="radioTime_1" type="radio" name="time_radio_group" class="radio_time grid_item" onchange="changeRT1()">
+                <label for="radioTime_1" class="grid_item">1 sekunda</label>
+
+                <input disabled id="radioTime_2" type="radio" name="time_radio_group" class="radio_time grid_item" onchange="changeRT2()">
+                <label for="radioTime_2" class="grid_item">2 sekundy</label>
+
+                <input disabled id="radioTime_5" type="radio" name="time_radio_group" class="radio_time grid_item" onchange="changeRT5()">
+                <label for="radioTime_5" class="grid_item">5 sekund</label>
+
+                <input disabled id="radioTime_10" type="radio" name="time_radio_group" class="radio_time grid_item" onchange="changeRT10()">
+                <label for="radioTime_10" class="grid_item">10 sekund</label>
+            </div>
+        </fieldset>
+    </div>
+
 </div>
+
 </body>
 </html>
