@@ -20,7 +20,8 @@ Motors::Motors(WebSocket *webSocket, Camera *camera)
       m_manualMovingRight(false), m_manualMovingUpper(false),
       m_manualMovingLower(false), m_manualMovingUp(false),
       m_manualMovingDown(false), m_stepSet(false), m_nextStepLeft(false),
-      m_time(GLOBAL::TIME::CHAR::TIME_1_125) {
+      m_time(GLOBAL::TIME::CHAR::TIME_1_125), m_captureFilm(false),
+      m_movementSmooth(false) {
   m_xStepper.setSpeed(SPEED_AUTO_RPM);
   m_yStepper.setSpeed(SPEED_AUTO_RPM);
   m_zStepper.setSpeed(SPEED_AUTO_RPM);
@@ -139,6 +140,14 @@ Motors::Motors(WebSocket *webSocket, Camera *camera)
   m_webSocket->attachListener(TIME,
                               [this](AsyncWebSocketClient *client, String msg) {
                                 timeHandler(client, msg);
+                              });
+  m_webSocket->attachListener(MOVEMENT,
+                              [this](AsyncWebSocketClient *client, String msg) {
+                                movementModeHandler(client, msg);
+                              });
+  m_webSocket->attachListener(CAPTURE,
+                              [this](AsyncWebSocketClient *client, String msg) {
+                                captureModeHandler(client, msg);
                               });
   m_webSocket->attachListener(DISCONNECT,
                               [this](AsyncWebSocketClient *client, String msg) {
@@ -314,7 +323,7 @@ void Motors::moveTask() {
 ////////////////////////////////////////////////////////////////////////////////
 
 String Motors::makeInfoString() const {
-  String info("       ");
+  String info("         ");
 
   // See JS function processInfo(data) For explanation
 
@@ -342,6 +351,12 @@ String Motors::makeInfoString() const {
             : m_calibratingStepStart.load() ? '1'
             : m_calibratingStepEnd.load()   ? '2'
                                             : '0';
+
+  info[7] = m_movementSmooth ? GLOBAL::MSG_DATA_MOVEMENT::DATA_MOVEMENT_SMOOTH
+                             : GLOBAL::MSG_DATA_MOVEMENT::DATA_MOVEMENT_SNAP;
+
+  info[8] = m_captureFilm ? GLOBAL::MSG_DATA_CAPTURE::DATA_CAPTURE_FILM
+                          : GLOBAL::MSG_DATA_CAPTURE::DATA_CAPTURE_PHOTO;
 
   return String(static_cast<char>(GLOBAL::MSG_TYPE::INFO)) + info;
 }
@@ -951,6 +966,51 @@ void Motors::timeHandler(AsyncWebSocketClient * /*client*/, const String &msg) {
 
   m_time = GLOBAL::Time(static_cast<GLOBAL::TIME::CHAR>(msg[1]));
   m_camera->setShutterSpeed(m_time.asMs);
+
+  m_webSocket->send(msg);
+}
+
+void Motors::movementModeHandler(AsyncWebSocketClient *client,
+                                 const String &msg) {
+  Logger::debug("Move mode received");
+
+  //todo: make movement happen in auto mode
+
+  using namespace GLOBAL::MSG_DATA_MOVEMENT;
+
+  switch (msg[1]) {
+  case DATA_MOVEMENT_SNAP:
+    m_movementSmooth = false;
+    break;
+  case DATA_MOVEMENT_SMOOTH:
+    m_movementSmooth = true;
+    break;
+  default:
+    Logger::warn(String("Unknown move type: ") + msg[1]);
+    break;
+  }
+
+  m_webSocket->send(msg);
+}
+
+void Motors::captureModeHandler(AsyncWebSocketClient *client, const String &msg) {
+  Logger::debug("Capture mode received");
+
+  //todo: make movement happen in auto mode
+
+  using namespace GLOBAL::MSG_DATA_CAPTURE;
+
+  switch (msg[1]) {
+  case DATA_CAPTURE_PHOTO:
+    m_captureFilm = false;
+    break;
+  case DATA_CAPTURE_FILM:
+    m_captureFilm = true;
+    break;
+  default:
+    Logger::warn(String("Unknown capture type: ") + msg[1]);
+    break;
+  }
 
   m_webSocket->send(msg);
 }

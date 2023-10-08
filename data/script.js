@@ -45,6 +45,10 @@ let radioTime_1;
 let radioTime_2;
 let radioTime_5;
 let radioTime_10;
+let radioMove_snap;
+let radioMove_smooth;
+let radioCapture_photo;
+let radioCapture_film;
 
 //////////////////////////////////////////////////////////////////////////////////////////
 // Message types
@@ -81,6 +85,8 @@ const TYPE_MANUAL_CONFIRM = 'K';
 const TYPE_INFO = 'i'; // RECEIVE ONLY
 const TYPE_TIME = 'y';
 const TYPE_LOST_CONTROL = ']'; // RECEIVE ONLY
+const TYPE_MOVEMENT = '('
+const TYPE_CAPTURE = ')'
 
 //////////////////////////////////////////////////////////////////////////////////////////
 // Message data
@@ -102,6 +108,12 @@ const DATA_TIME_1 = 'c';
 const DATA_TIME_2 = 'd';
 const DATA_TIME_5 = 'e';
 const DATA_TIME_10 = 'f';
+
+const DATA_MOVEMENT_SNAP = '0';
+const DATA_MOVEMENT_SMOOTH = '1';
+
+const DATA_CAPTURE_FILM = '0';
+const DATA_CAPTURE_PHOTO = '1';
 
 //////////////////////////////////////////////////////////////////////////////////////////
 // Constants
@@ -407,7 +419,13 @@ function onMessage(evt) {
             processInfo(msgData);
             break;
         case TYPE_TIME: // Received on time change
-            setRadio(msgData);
+            setShutterRadio(msgData);
+            break;
+        case TYPE_MOVEMENT:
+            setMovementRadio(msgData);
+            break;
+        case TYPE_CAPTURE:
+            setCaptureRadio(msgData);
             break;
         case TYPE_MANUAL_START_LEFT: // Received on manual start left
             console.log("Manual start left");
@@ -550,67 +568,83 @@ function ctrlStop() {
 //////////////////////////////////////////////////////////////////////////////////////////
 
 function changeRT1_4000() {
-    onRadioChange(radioTime_1_4000, DATA_TIME_1_4000);
+    onRadioShutterChange(radioTime_1_4000, DATA_TIME_1_4000);
 }
 
 function changeRT1_2000() {
-    onRadioChange(radioTime_1_2000, DATA_TIME_1_2000);
+    onRadioShutterChange(radioTime_1_2000, DATA_TIME_1_2000);
 }
 
 function changeRT1_1000() {
-    onRadioChange(radioTime_1_1000, DATA_TIME_1_1000);
+    onRadioShutterChange(radioTime_1_1000, DATA_TIME_1_1000);
 }
 
 function changeRT1_500() {
-    onRadioChange(radioTime_1_500, DATA_TIME_1_500);
+    onRadioShutterChange(radioTime_1_500, DATA_TIME_1_500);
 }
 
 function changeRT1_250() {
-    onRadioChange(radioTime_1_250, DATA_TIME_1_250);
+    onRadioShutterChange(radioTime_1_250, DATA_TIME_1_250);
 }
 
 function changeRT1_125() {
-    onRadioChange(radioTime_1_125, DATA_TIME_1_125);
+    onRadioShutterChange(radioTime_1_125, DATA_TIME_1_125);
 }
 
 function changeRT1_60() {
-    onRadioChange(radioTime_1_60, DATA_TIME_1_60);
+    onRadioShutterChange(radioTime_1_60, DATA_TIME_1_60);
 }
 
 function changeRT1_30() {
-    onRadioChange(radioTime_1_30, DATA_TIME_1_30);
+    onRadioShutterChange(radioTime_1_30, DATA_TIME_1_30);
 }
 
 function changeRT1_15() {
-    onRadioChange(radioTime_1_15, DATA_TIME_1_15);
+    onRadioShutterChange(radioTime_1_15, DATA_TIME_1_15);
 }
 
 function changeRT1_8() {
-    onRadioChange(radioTime_1_8, DATA_TIME_1_8);
+    onRadioShutterChange(radioTime_1_8, DATA_TIME_1_8);
 }
 
 function changeRT1_4() {
-    onRadioChange(radioTime_1_4, DATA_TIME_1_4);
+    onRadioShutterChange(radioTime_1_4, DATA_TIME_1_4);
 }
 
 function changeRT1_2() {
-    onRadioChange(radioTime_1_2, DATA_TIME_1_2);
+    onRadioShutterChange(radioTime_1_2, DATA_TIME_1_2);
 }
 
 function changeRT1() {
-    onRadioChange(radioTime_1, DATA_TIME_1);
+    onRadioShutterChange(radioTime_1, DATA_TIME_1);
 }
 
 function changeRT2() {
-    onRadioChange(radioTime_2, DATA_TIME_2);
+    onRadioShutterChange(radioTime_2, DATA_TIME_2);
 }
 
 function changeRT5() {
-    onRadioChange(radioTime_5, DATA_TIME_5);
+    onRadioShutterChange(radioTime_5, DATA_TIME_5);
 }
 
 function changeRT10() {
-    onRadioChange(radioTime_10, DATA_TIME_10);
+    onRadioShutterChange(radioTime_10, DATA_TIME_10);
+}
+
+function changeRMVSnap() {
+    onRadioMovementChange(radioMove_snap, DATA_MOVEMENT_SNAP);
+}
+
+function changeRMVSmooth() {
+    onRadioMovementChange(radioMove_smooth, DATA_MOVEMENT_SMOOTH);
+}
+
+function changeRCPhoto() {
+    onRadioCaptureChange(radioCapture_photo, DATA_CAPTURE_PHOTO);
+}
+
+function changeRCFilm() {
+    onRadioCaptureChange(radioCapture_film, DATA_CAPTURE_FILM);
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////
@@ -634,6 +668,12 @@ function disableRadioButtons() {
     radioTime_2.disabled = true;
     radioTime_5.disabled = true;
     radioTime_10.disabled = true;
+
+    radioMove_smooth.disabled = true;
+    radioMove_snap.disabled = true;
+
+    radioCapture_film.disabled = true;
+    radioCapture_photo.disabled = true;
 }
 
 function enableRadioButtons() {
@@ -653,6 +693,12 @@ function enableRadioButtons() {
     radioTime_2.disabled = false;
     radioTime_5.disabled = false;
     radioTime_10.disabled = false;
+
+    radioMove_smooth.disabled = false;
+    radioMove_snap.disabled = false;
+
+    radioCapture_film.disabled = false;
+    radioCapture_photo.disabled = false;
 }
 
 function disableStartButton() {
@@ -755,6 +801,10 @@ function assignPageElements() {
     radioTime_2 = document.getElementById("radioTime_2");
     radioTime_5 = document.getElementById("radioTime_5");
     radioTime_10 = document.getElementById("radioTime_10");
+    radioCapture_film = document.getElementById("radioCapture_film");
+    radioCapture_photo = document.getElementById("radioCapture_photo");
+    radioMove_snap = document.getElementById("radioMove_snap");
+    radioMove_smooth = document.getElementById("radioMove_smooth");
 }
 
 function setStatusColor(statusObj, colorObj) {
@@ -793,8 +843,12 @@ function processInfo(data) {
     // idx 4: calibrating up (0,1, D) - D = done
     // idx 5: calibrating down (0,1, D) - D = done
     // idx 6: calibrating step (0,1,2, D) - D = done
+    // idx 7: move radio (0, 1)
+    // idx 8: capture radio (0, 1)
 
-    setRadio(data[0]);
+    setShutterRadio(data[0]);
+    setMovementRadio(data[7]);
+    setCaptureRadio(data[8]);
     enableRadioButtons();
     enableCalButton();
     if (data[1] === "1") {
@@ -813,7 +867,7 @@ function processInfo(data) {
     }
 }
 
-function setRadio(radioChar) {
+function setShutterRadio(radioChar) {
     switch (radioChar) {
         case DATA_TIME_1_4000:
             radioTime_1_4000.checked = true;
@@ -864,6 +918,32 @@ function setRadio(radioChar) {
             radioTime_10.checked = true;
             break;
         case " ":
+            break;
+        default:
+            console.log("Unknown radio: " + radioChar);
+    }
+}
+
+function setMovementRadio(radioChar) {
+    switch (radioChar) {
+        case DATA_MOVEMENT_SNAP:
+            radioMove_snap.checked = true;
+            break;
+        case DATA_MOVEMENT_SMOOTH:
+            radioMove_smooth.checked = true;
+            break;
+        default:
+            console.log("Unknown radio: " + radioChar);
+    }
+}
+
+function setCaptureRadio(radioChar) {
+    switch (radioChar) {
+        case DATA_CAPTURE_PHOTO:
+            radioCapture_photo.checked = true;
+            break;
+        case DATA_CAPTURE_FILM:
+            radioCapture_film.checked = true;
             break;
         default:
             console.log("Unknown radio: " + radioChar);
@@ -945,9 +1025,21 @@ function infoSetButtons(ul, lr, up, down, step) {
     }
 }
 
-function onRadioChange(radio, data) {
+function onRadioShutterChange(radio, data) {
     if (radio.checked) {
         doSend(makeMessage(TYPE_TIME, data));
+    }
+}
+
+function onRadioMovementChange(radio, data) {
+    if (radio.checked) {
+        doSend(makeMessage(TYPE_MOVEMENT, data));
+    }
+}
+
+function onRadioCaptureChange(radio, data) {
+    if (radio.checked) {
+        doSend(makeMessage(TYPE_CAPTURE, data));
     }
 }
 
