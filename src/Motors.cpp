@@ -22,9 +22,9 @@ Motors::Motors(WebSocket *webSocket, Camera *camera)
       m_manualMovingDown(false), m_stepSet(false), m_nextStepLeft(false),
       m_time(GLOBAL::TIME::CHAR::TIME_1_125), m_captureFilm(false),
       m_movementSmooth(false) {
-  m_xStepper.setSpeed(SPEED_AUTO_RPM);
-  m_yStepper.setSpeed(SPEED_AUTO_RPM);
-  m_zStepper.setSpeed(SPEED_AUTO_RPM);
+  m_xStepper.setSpeed(SPEED_AUTO_RESET_RPM);
+  m_yStepper.setSpeed(SPEED_AUTO_RESET_RPM);
+  m_zStepper.setSpeed(SPEED_AUTO_RESET_RPM);
 
   using namespace GLOBAL::MSG_TYPE;
   using namespace GLOBAL::HANDLER;
@@ -239,7 +239,7 @@ void Motors::moveTo(int_fast16_t target, Direction direction) {
   }
 }
 
-bool Motors::nextStep() {
+bool Motors::nextStepSnake() {
   // -> -> -> v
   // v <- <- <-
   // -> -> -> v
@@ -302,17 +302,61 @@ void Motors::moveTask() {
   moveTo(*m_zExtremes.first.load(), Direction::Z);
   m_nextStepLeft = false;
 
-  // Execute pattern
-  while (!m_shouldStop.load()) {
-    do {
-      m_camera->takePictureAndWait();
-    } while (nextHeight());
+  if (!m_movementSmooth) {
+    // Execute pattern
+    while (!m_shouldStop.load()) {
+      do {
+        m_camera->takePictureAndWait();
+      } while (nextHeight());
 
-    resetHeight();
+      resetHeight();
 
-    if (!nextStep()) {
-      break;
+      if (!nextStepSnake()) {
+        break;
+      }
     }
+  } else {
+    // todo: handle case when opposite corners assigned
+
+    const double diffX = *m_xExtremes.second.load() - *m_xExtremes.first.load();
+    const double diffY = *m_yExtremes.second.load() - *m_yExtremes.first.load();
+
+    double speedRatio{};
+    int speedX{};
+    int speedY{};
+
+    if (diffY >= diffX) {
+      speedRatio = diffX != 0 ? diffY / diffX : 0;
+      speedY = SPEED_AUTO_SMOOTH_MS;
+      speedX = static_cast<int>(std::ceil(static_cast<double>(speedY) * speedRatio));
+    } else {
+      speedRatio = diffY != 0 ? diffX / diffY : 0;
+      speedX = SPEED_AUTO_SMOOTH_MS;
+      speedY = static_cast<int>(std::ceil(static_cast<double>(speedX) * speedRatio));
+    }
+
+    // todo: cam control
+
+    Logger::debug(String("Speed: ") + speedX + ", " + speedY);
+
+    m_moveSmoothTaskX = TrackedTask(false, [speedX, this]() {
+      while (!m_shouldStop.load() && m_xPos != m_xExtremes.second.load()) {
+        m_xStepper.step(1);
+        ++m_xPos;
+        delay(speedX);
+      }
+    });
+
+    m_moveSmoothTaskY = TrackedTask(false, [speedY, this]() {
+      while (!m_shouldStop.load() && m_yPos != m_yExtremes.second.load()) {
+        m_yStepper.step(1);
+        ++m_yPos;
+        delay(speedY);
+      }
+    });
+
+    m_moveSmoothTaskX.safeJoin();
+    m_moveSmoothTaskY.safeJoin();
   }
 
   m_shouldStop = true;
@@ -974,8 +1018,6 @@ void Motors::movementModeHandler(AsyncWebSocketClient *client,
                                  const String &msg) {
   Logger::debug("Move mode received");
 
-  //todo: make movement happen in auto mode
-
   using namespace GLOBAL::MSG_DATA_MOVEMENT;
 
   switch (msg[1]) {
@@ -993,10 +1035,9 @@ void Motors::movementModeHandler(AsyncWebSocketClient *client,
   m_webSocket->send(msg);
 }
 
-void Motors::captureModeHandler(AsyncWebSocketClient *client, const String &msg) {
+void Motors::captureModeHandler(AsyncWebSocketClient *client,
+                                const String &msg) {
   Logger::debug("Capture mode received");
-
-  //todo: make movement happen in auto mode
 
   using namespace GLOBAL::MSG_DATA_CAPTURE;
 

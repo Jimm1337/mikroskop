@@ -19,7 +19,8 @@ class Motors {
                              std::atomic<std::optional<int_fast16_t>>>;
 
   static constexpr auto SPEED_MANUAL_MS = 30;
-  static constexpr auto SPEED_AUTO_RPM = 60;
+  static constexpr auto SPEED_AUTO_RESET_RPM = 60;
+  static constexpr auto SPEED_AUTO_SMOOTH_MS = 20;
   static constexpr auto STEP_PER_REV = 200;
   static constexpr std::tuple X_PINS{32, 33, 25, 26};
   static constexpr std::tuple Y_PINS{27, 14, 12, 13};
@@ -34,6 +35,8 @@ class Motors {
   Camera *m_camera;
   std::atomic<std::optional<uint32_t>> m_manualClientID;
   TrackedTask m_moveTask;
+  TrackedTask m_moveSmoothTaskX;
+  TrackedTask m_moveSmoothTaskY;
   TrackedTask m_manualLeftTask;
   TrackedTask m_manualRightTask;
   TrackedTask m_manualUpperTask;
@@ -87,7 +90,7 @@ private:
   void executeManualDown();
 
   void moveTo(int_fast16_t target, Direction direction);
-  bool nextStep();
+  bool nextStepSnake();
   bool nextHeight();
   void resetHeight();
   void moveTask();
