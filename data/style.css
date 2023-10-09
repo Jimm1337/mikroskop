@@ -104,6 +104,22 @@ body {
     row-gap: 5px;
 }
 
+.movement_grid {
+    display: grid;
+    grid-template-columns: .1fr 1fr;
+    grid-template-rows: 1fr 1fr;
+    column-gap: 10px;
+    row-gap: 5px;
+}
+
+.capture_grid {
+    display: grid;
+    grid-template-columns: .1fr 1fr;
+    grid-template-rows: 1fr 1fr;
+    column-gap: 10px;
+    row-gap: 5px;
+}
+
 .grid_item {
     display: flex;
     justify-content: center;
@@ -130,7 +146,7 @@ body {
 
 .color_time_border {
     border: 3px solid #ae8100;
-    scale: 87.8%; /*TODO: ??? Align this better*/
+    /*TODO: ??? Align this better*/
 }
 
 .color_control_border {
@@ -139,6 +155,10 @@ body {
 
 .color_status_border {
     border: 3px solid #706f72;
+}
+
+.color_movement {
+    border: 3px solid #e346d0;
 }
 
 .color_calibrate {

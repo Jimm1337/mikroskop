@@ -22,6 +22,30 @@
             </div>
         </div>
 
+        <div class="panel color_movement align_row">
+            <fieldset>
+                <legend>Typ ruchu</legend>
+                <div class="movement_grid">
+                    <input disabled id="radioMove_snap" type="radio" name="move_radio_group" class="radio_move grid_item" onchange="changeRMVSnap()">
+                    <label for="radioMove_snap" class="grid_item">Przerwy</label>
+
+                    <input disabled id="radioMove_smooth" type="radio" name="move_radio_group" class="radio_move grid_item" onchange="changeRMVSmooth()">
+                    <label for="radioMove_smooth" class="grid_item">Płynne</label>
+                </div>
+            </fieldset>
+
+            <fieldset>
+                <legend>Przechwytywanie</legend>
+                <div class="capture_grid">
+                    <input disabled id="radioCapture_photo" type="radio" name="capture_radio_group" class="radio_capture grid_item" onchange="changeRCPhoto()">
+                    <label for="radioCapture_photo" class="grid_item">Zdjęcie</label>
+
+                    <input disabled id="radioCapture_film" type="radio" name="capture_radio_group" class="radio_capture grid_item" onchange="changeRCFilm()">
+                    <label for="radioCapture_film" class="grid_item">Nagrywanie</label>
+                </div>
+            </fieldset>
+        </div>
+
         <div class="panel color_calibrate_border">
             <button disabled id="btnCal" class="button color_calibrate btn_cal" onclick="calStart()">Rozpocznij Kalibrację
             </button>
